@@ -181,6 +181,16 @@ const PX4FMU::GPIOConfig PX4FMU::_gpio_tab[] = {
     {GPIO_GPIO5_INPUT, GPIO_GPIO5_OUTPUT, GPIO_USART2_RX_2},
     {GPIO_GPIO6_INPUT, GPIO_GPIO6_OUTPUT, GPIO_CAN1_TX_3},
     {GPIO_GPIO7_INPUT, GPIO_GPIO7_OUTPUT, GPIO_CAN1_RX_3},
+    
+    {GPIO_GPIO8_INPUT,  GPIO_GPIO8_OUTPUT,       0},
+    {GPIO_GPIO9_INPUT,  GPIO_GPIO9_OUTPUT,       0},
+    {GPIO_GPIO10_INPUT, GPIO_GPIO10_OUTPUT,       0},
+    {GPIO_GPIO11_INPUT, GPIO_GPIO11_OUTPUT,       0},
+    {GPIO_GPIO12_INPUT, GPIO_GPIO12_OUTPUT,       0},
+    {GPIO_GPIO13_INPUT, GPIO_GPIO13_OUTPUT,       0},
+    {GPIO_GPIO14_INPUT, GPIO_GPIO14_OUTPUT,       0},
+    {GPIO_GPIO15_INPUT, GPIO_GPIO15_OUTPUT,       0},
+    
 #endif
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 	{GPIO_GPIO0_INPUT,       GPIO_GPIO0_OUTPUT,       0},
@@ -717,6 +727,7 @@ PX4FMU::ioctl(file *filp, int cmd, unsigned long arg)
 	case MODE_2PWM:
 	case MODE_4PWM:
 	case MODE_6PWM:
+    case MODE_8PWM:
 		ret = pwm_ioctl(filp, cmd, arg);
 		break;
 
@@ -1432,25 +1443,27 @@ fmu_new_mode(PortMode new_mode)
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 
 	case PORT_FULL_SERIAL:
+	  servo_mode = PX4FMU::MODE_8PWM;
 		/* set all multi-GPIOs to serial mode */
 		gpio_bits = GPIO_MULTI_1 | GPIO_MULTI_2 | GPIO_MULTI_3 | GPIO_MULTI_4;
 		break;
 
 	case PORT_GPIO_AND_SERIAL:
+	  servo_mode = PX4FMU::MODE_8PWM;
 		/* set RX/TX multi-GPIOs to serial mode */
 		gpio_bits = GPIO_MULTI_3 | GPIO_MULTI_4;
 		break;
 
 	case PORT_PWM_AND_SERIAL:
 		/* select 2-pin PWM mode */
-		servo_mode = PX4FMU::MODE_2PWM;
+		servo_mode = PX4FMU::MODE_8PWM;
 		/* set RX/TX multi-GPIOs to serial mode */
 		gpio_bits = GPIO_MULTI_3 | GPIO_MULTI_4;
 		break;
 
 	case PORT_PWM_AND_GPIO:
 		/* select 2-pin PWM mode */
-		servo_mode = PX4FMU::MODE_2PWM;
+		servo_mode = PX4FMU::MODE_8PWM;
 		break;
 #endif
 

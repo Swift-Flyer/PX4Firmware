@@ -648,7 +648,7 @@ enum PortMode {
 	PORT1_PWM_AND_SERIAL,
 	PORT1_PWM_AND_GPIO,
 	PORT2_MODE_UNSET,
-	PORT2_8PWM,
+	PORT1_8PWM,
 	PORT2_12PWM,
 	PORT2_16PWM,
 };
@@ -677,22 +677,22 @@ hil_new_mode(PortMode new_mode)
 
 	case PORT1_FULL_PWM:
 		/* select 4-pin PWM mode */
-		servo_mode = HIL::MODE_4PWM;
+		servo_mode = HIL::MODE_8PWM;
 		break;
 
 	case PORT1_PWM_AND_SERIAL:
 		/* select 2-pin PWM mode */
-		servo_mode = HIL::MODE_2PWM;
+		servo_mode = HIL::MODE_8PWM;
 //		/* set RX/TX multi-GPIOs to serial mode */
 //		gpio_bits = GPIO_MULTI_3 | GPIO_MULTI_4;
 		break;
 
 	case PORT1_PWM_AND_GPIO:
 		/* select 2-pin PWM mode */
-		servo_mode = HIL::MODE_2PWM;
+		servo_mode = HIL::MODE_8PWM;
 		break;
             
-        case PORT2_8PWM:
+        case PORT1_8PWM:
             /* select 8-pin PWM mode */
             servo_mode = HIL::MODE_8PWM;
             break;
