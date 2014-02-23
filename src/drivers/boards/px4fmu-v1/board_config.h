@@ -122,7 +122,7 @@ __BEGIN_DECLS
  *
  * GPIO0-1 are the buffered high-power GPIOs.
  * GPIO2-5 are the USART2 pins.
- * GPIO6-7 are the CAN2 pins.
+ * GPIO6-7 are the CAN1 pins.
  */
 #define GPIO_GPIO0_INPUT (GPIO_INPUT|GPIO_PULLUP|GPIO_PORTE|GPIO_PIN7)
 #define GPIO_GPIO1_INPUT (GPIO_INPUT|GPIO_PULLUP|GPIO_PORTE|GPIO_PIN8)

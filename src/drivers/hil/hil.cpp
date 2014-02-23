@@ -86,7 +86,7 @@ public:
 	enum Mode {
 		MODE_2PWM,
 		MODE_4PWM,
-        MODE_8PWM,
+		MODE_8PWM,
         MODE_12PWM,
         MODE_16PWM,
 		MODE_NONE
@@ -351,8 +351,8 @@ HIL::task_main()
 		break;
 
 	case MODE_8PWM:
-	case MODE_12PWM:
-	case MODE_16PWM:
+	//case MODE_12PWM:
+	//case MODE_16PWM:
 		// XXX only support the lower 8 - trivial to extend
 		num_outputs = 8;
 		break;
@@ -813,19 +813,19 @@ hil_main(int argc, char *argv[])
 		new_mode = PORT1_FULL_PWM;
 
 	} else if (!strcmp(verb, "mode_pwm_serial")) {
-		new_mode = PORT1_PWM_AND_SERIAL;
+		new_mode = PORT1_FULL_PWM;
 
 	} else if (!strcmp(verb, "mode_pwm_gpio")) {
-		new_mode = PORT1_PWM_AND_GPIO;
+		new_mode = PORT1_FULL_PWM;
 
 	} else if (!strcmp(verb, "mode_port2_pwm8")) {
-		new_mode = PORT2_8PWM;
+		new_mode = PORT1_FULL_PWM;
 
 	} else if (!strcmp(verb, "mode_port2_pwm12")) {
-		new_mode = PORT2_8PWM;
+		new_mode = PORT1_FULL_PWM;
 
 	} else if (!strcmp(verb, "mode_port2_pwm16")) {
-		new_mode = PORT2_8PWM;
+		new_mode = PORT1_FULL_PWM;
 	}
 
 	/* was a new mode set? */

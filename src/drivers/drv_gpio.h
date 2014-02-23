@@ -55,8 +55,8 @@
 # define GPIO_MULTI_2		(1<<3)		/**< USART2 RTS */
 # define GPIO_MULTI_3		(1<<4)		/**< USART2 TX */
 # define GPIO_MULTI_4		(1<<5)		/**< USART2 RX */
-# define GPIO_CAN_TX		(1<<6)		/**< CAN2 TX */
-# define GPIO_CAN_RX		(1<<7)		/**< CAN2 RX */
+# define GPIO_CAN_TX		(1<<6)		/**< CAN1 TX */
+# define GPIO_CAN_RX		(1<<7)		/**< CAN1 RX */
 
 # define GPIO_SERVO_1		(1<<8)		/**< servo 1 output */
 # define GPIO_SERVO_2		(1<<9)		/**< servo 2 output */
