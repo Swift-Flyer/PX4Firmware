@@ -257,7 +257,12 @@ __EXPORT int nsh_archinitialize(void)
 
 message("[boot] Initializing SPI port 3\n");
         spi3 = up_spiinitialize(3);
-
+		///* Default SPI3 to 1MHz and de-assert the known chip selects. */
+                SPI_SETFREQUENCY(spi3, 10000000);
+                SPI_SETBITS(spi3, 8);
+                SPI_SETMODE(spi3, SPIDEV_MODE3);
+                SPI_SELECT(spi3, PX4_SPIDEV_GYRO, false);
+                SPI_SELECT(spi3, PX4_SPIDEV_ACCEL_MAG, false);
         if (!spi3) {
                 message("[boot] FAILED to initialize SPI port 3\n");
                 up_ledon(LED_AMBER);
