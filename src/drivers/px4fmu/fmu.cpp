@@ -91,6 +91,7 @@ public:
 		MODE_2PWM,
 		MODE_4PWM,
 		MODE_6PWM,
+		MODE_8PWM,//F4Y
 	};
 	PX4FMU();
 	virtual ~PX4FMU();
@@ -107,7 +108,7 @@ public:
 
 private:
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-	static const unsigned _max_actuators = 4;
+	static const unsigned _max_actuators = 8;
 #endif
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 	static const unsigned _max_actuators = 6;
@@ -172,14 +173,24 @@ private:
 
 const PX4FMU::GPIOConfig PX4FMU::_gpio_tab[] = {
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-	{GPIO_GPIO0_INPUT, GPIO_GPIO0_OUTPUT, 0},
-	{GPIO_GPIO1_INPUT, GPIO_GPIO1_OUTPUT, 0},
-	{GPIO_GPIO2_INPUT, GPIO_GPIO2_OUTPUT, GPIO_USART2_CTS_1},
-	{GPIO_GPIO3_INPUT, GPIO_GPIO3_OUTPUT, GPIO_USART2_RTS_1},
-	{GPIO_GPIO4_INPUT, GPIO_GPIO4_OUTPUT, GPIO_USART2_TX_1},
-	{GPIO_GPIO5_INPUT, GPIO_GPIO5_OUTPUT, GPIO_USART2_RX_1},
-	{GPIO_GPIO6_INPUT, GPIO_GPIO6_OUTPUT, GPIO_CAN2_TX_2},
-	{GPIO_GPIO7_INPUT, GPIO_GPIO7_OUTPUT, GPIO_CAN2_RX_2},
+    {GPIO_GPIO0_INPUT, GPIO_GPIO0_OUTPUT, 0},
+    {GPIO_GPIO1_INPUT, GPIO_GPIO1_OUTPUT, 0},
+    {GPIO_GPIO2_INPUT, GPIO_GPIO2_OUTPUT, GPIO_USART2_CTS_2},
+    {GPIO_GPIO3_INPUT, GPIO_GPIO3_OUTPUT, GPIO_USART2_RTS_2},
+    {GPIO_GPIO4_INPUT, GPIO_GPIO4_OUTPUT, GPIO_USART2_TX_2},
+    {GPIO_GPIO5_INPUT, GPIO_GPIO5_OUTPUT, GPIO_USART2_RX_2},
+    {GPIO_GPIO6_INPUT, GPIO_GPIO6_OUTPUT, GPIO_CAN1_TX_3},
+    {GPIO_GPIO7_INPUT, GPIO_GPIO7_OUTPUT, GPIO_CAN1_RX_3},
+    
+    {GPIO_GPIO8_INPUT,  GPIO_GPIO8_OUTPUT, GPIO_SERVO_1},
+    {GPIO_GPIO9_INPUT,  GPIO_GPIO9_OUTPUT, GPIO_SERVO_2},
+    {GPIO_GPIO10_INPUT, GPIO_GPIO10_OUTPUT, GPIO_SERVO_3},
+    {GPIO_GPIO11_INPUT, GPIO_GPIO11_OUTPUT, GPIO_SERVO_4},
+    {GPIO_GPIO12_INPUT, GPIO_GPIO12_OUTPUT, GPIO_SERVO_5},
+    {GPIO_GPIO13_INPUT, GPIO_GPIO13_OUTPUT, GPIO_SERVO_6},
+    {GPIO_GPIO14_INPUT, GPIO_GPIO14_OUTPUT, GPIO_SERVO_7},
+    {GPIO_GPIO15_INPUT, GPIO_GPIO15_OUTPUT, GPIO_SERVO_8},
+    
 #endif
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 	{GPIO_GPIO0_INPUT,       GPIO_GPIO0_OUTPUT,       0},
@@ -360,6 +371,19 @@ PX4FMU::set_mode(Mode mode)
 
 		/* XXX magic numbers */
 		up_pwm_servo_init(0x3f);
+		set_pwm_rate(_pwm_alt_rate_channels, _pwm_default_rate, _pwm_alt_rate);
+
+		break;
+	case MODE_8PWM: // v1 F4BY
+		debug("MODE_8PWM");
+		
+		/* default output rates */
+		_pwm_default_rate = 50;
+		_pwm_alt_rate = 50;
+		_pwm_alt_rate_channels = 0;
+
+		/* XXX magic numbers */
+		up_pwm_servo_init(0xff);
 		set_pwm_rate(_pwm_alt_rate_channels, _pwm_default_rate, _pwm_alt_rate);
 
 		break;
@@ -560,6 +584,11 @@ PX4FMU::task_main()
 						num_outputs = 6;
 						break;
 
+					
+					case MODE_8PWM: //F4Y
+						num_outputs = 8;
+						break;
+					
 					default:
 						num_outputs = 0;
 						break;
@@ -698,6 +727,7 @@ PX4FMU::ioctl(file *filp, int cmd, unsigned long arg)
 	case MODE_2PWM:
 	case MODE_4PWM:
 	case MODE_6PWM:
+    	case MODE_8PWM:
 		ret = pwm_ioctl(filp, cmd, arg);
 		break;
 
@@ -926,6 +956,12 @@ PX4FMU::pwm_ioctl(file *filp, int cmd, unsigned long arg)
 			arg = (unsigned long)&pwm;
 			break;
 		}
+	case PWM_SERVO_SET(7):   //F4Y
+	case PWM_SERVO_SET(6):  //F4Y
+		if (_mode < MODE_8PWM) {
+			ret = -EINVAL;
+			break;
+		}
 
 	case PWM_SERVO_SET(5):
 	case PWM_SERVO_SET(4):
@@ -953,6 +989,12 @@ PX4FMU::pwm_ioctl(file *filp, int cmd, unsigned long arg)
 		}
 
 		break;
+	case PWM_SERVO_GET(7):
+	case PWM_SERVO_GET(6):
+		if (_mode < MODE_8PWM) {
+			ret = -EINVAL;
+			break;
+		}	
 
 	case PWM_SERVO_GET(5):
 	case PWM_SERVO_GET(4):
@@ -981,12 +1023,18 @@ PX4FMU::pwm_ioctl(file *filp, int cmd, unsigned long arg)
 	case PWM_SERVO_GET_RATEGROUP(3):
 	case PWM_SERVO_GET_RATEGROUP(4):
 	case PWM_SERVO_GET_RATEGROUP(5):
+	case PWM_SERVO_GET_RATEGROUP(6)://F4Y
+	case PWM_SERVO_GET_RATEGROUP(7)://F4Y
 		*(uint32_t *)arg = up_pwm_servo_get_rate_group(cmd - PWM_SERVO_GET_RATEGROUP(0));
 		break;
 
 	case PWM_SERVO_GET_COUNT:
 	case MIXERIOCGETOUTPUTCOUNT:
 		switch (_mode) {
+		case MODE_8PWM: //F4Y
+			*(unsigned *)arg = 8;
+			break;
+
 		case MODE_6PWM:
 			*(unsigned *)arg = 6;
 			break;
@@ -1025,6 +1073,9 @@ PX4FMU::pwm_ioctl(file *filp, int cmd, unsigned long arg)
 
 		case 4:
 			set_mode(MODE_4PWM);
+			break;
+		case 8: //F4BY
+			set_mode(MODE_8PWM);
 			break;
 
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
@@ -1112,11 +1163,11 @@ ssize_t
 PX4FMU::write(file *filp, const char *buffer, size_t len)
 {
 	unsigned count = len / 2;
-	uint16_t values[6];
+	uint16_t values[8];//F4BY
 
-	if (count > 6) {
-		// we have at most 6 outputs
-		count = 6;
+	if (count > 8) {//F4BY
+		// we have at most 8 outputs//F4BY
+		count = 8;//F4BY
 	}
 
 	// allow for misaligned values
@@ -1386,8 +1437,8 @@ fmu_new_mode(PortMode new_mode)
 
 	case PORT_FULL_PWM:
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-		/* select 4-pin PWM mode */
-		servo_mode = PX4FMU::MODE_4PWM;
+		/* select 8-pin PWM mode */
+		servo_mode = PX4FMU::MODE_8PWM;//F4BY
 #endif
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 		servo_mode = PX4FMU::MODE_6PWM;
@@ -1398,25 +1449,27 @@ fmu_new_mode(PortMode new_mode)
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 
 	case PORT_FULL_SERIAL:
+	  servo_mode = PX4FMU::MODE_8PWM;
 		/* set all multi-GPIOs to serial mode */
 		gpio_bits = GPIO_MULTI_1 | GPIO_MULTI_2 | GPIO_MULTI_3 | GPIO_MULTI_4;
 		break;
 
 	case PORT_GPIO_AND_SERIAL:
+	  servo_mode = PX4FMU::MODE_8PWM;
 		/* set RX/TX multi-GPIOs to serial mode */
 		gpio_bits = GPIO_MULTI_3 | GPIO_MULTI_4;
 		break;
 
 	case PORT_PWM_AND_SERIAL:
 		/* select 2-pin PWM mode */
-		servo_mode = PX4FMU::MODE_2PWM;
+		servo_mode = PX4FMU::MODE_8PWM;
 		/* set RX/TX multi-GPIOs to serial mode */
 		gpio_bits = GPIO_MULTI_3 | GPIO_MULTI_4;
 		break;
 
 	case PORT_PWM_AND_GPIO:
 		/* select 2-pin PWM mode */
-		servo_mode = PX4FMU::MODE_2PWM;
+		servo_mode = PX4FMU::MODE_8PWM;
 		break;
 #endif
 
