@@ -846,7 +846,8 @@ HMC5883::collect()
 		// convert onboard so it matches offboard for the
 		// scaling below
 		report.y = -report.y;
-		report.x = -report.x;
+		//report.x = -report.x;//F4BY
+		report.z = -report.z;//F4BY
         }
 #endif
 
