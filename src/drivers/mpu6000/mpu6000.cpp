@@ -1196,15 +1196,15 @@ MPU6000::measure()
 	 * Convert from big to little endian
 	 */
 
-	report.accel_x = -int16_t_from_bytes(mpu_report.accel_x);//f4by
+	report.accel_x = int16_t_from_bytes(mpu_report.accel_x);
 	report.accel_y = int16_t_from_bytes(mpu_report.accel_y);
-	report.accel_z = -int16_t_from_bytes(mpu_report.accel_z);
+	report.accel_z = int16_t_from_bytes(mpu_report.accel_z);
 
 	report.temp = int16_t_from_bytes(mpu_report.temp);
 
-	report.gyro_x = -int16_t_from_bytes(mpu_report.gyro_x);
+	report.gyro_x = int16_t_from_bytes(mpu_report.gyro_x);
 	report.gyro_y = int16_t_from_bytes(mpu_report.gyro_y);
-	report.gyro_z = -int16_t_from_bytes(mpu_report.gyro_z);
+	report.gyro_z = int16_t_from_bytes(mpu_report.gyro_z);
 
 	if (report.accel_x == 0 &&
 	    report.accel_y == 0 &&

@@ -56,7 +56,7 @@
  ************************************************************************************/
 
 /* Clocking *************************************************************************/
-/* The F4BY uses a 8MHz crystal connected to the HSE.
+/* The PX4FMU uses a 24MHz crystal connected to the HSE.
  *
  * This is the canonical configuration:
  *   System Clock source           : PLL (HSE)
@@ -65,8 +65,8 @@
  *   AHB Prescaler                 : 1            (STM32_RCC_CFGR_HPRE)
  *   APB1 Prescaler                : 4            (STM32_RCC_CFGR_PPRE1)
  *   APB2 Prescaler                : 2            (STM32_RCC_CFGR_PPRE2)
- *   HSE Frequency(Hz)             : 8000000     (STM32_BOARD_XTAL)
- *   PLLM                          : 8           (STM32_PLLCFG_PLLM)
+ *   HSE Frequency(Hz)             : 24000000     (STM32_BOARD_XTAL)
+ *   PLLM                          : 24           (STM32_PLLCFG_PLLM)
  *   PLLN                          : 336          (STM32_PLLCFG_PLLN)
  *   PLLP                          : 2            (STM32_PLLCFG_PLLP)
  *   PLLQ                          : 7            (STM32_PLLCFG_PLLQ)
@@ -85,7 +85,7 @@
  * LSE - not installed
  */
 
-#define STM32_BOARD_XTAL        8000000ul //F4BY
+#define STM32_BOARD_XTAL        24000000ul
 
 #define STM32_HSI_FREQUENCY     16000000ul
 #define STM32_LSI_FREQUENCY     32000
@@ -105,7 +105,7 @@
  *         = 48,000,000
  */
 
-#define STM32_PLLCFG_PLLM       RCC_PLLCFG_PLLM(8) //F4BY
+#define STM32_PLLCFG_PLLM       RCC_PLLCFG_PLLM(24)
 #define STM32_PLLCFG_PLLN       RCC_PLLCFG_PLLN(336)
 #define STM32_PLLCFG_PLLP       RCC_PLLCFG_PLLP_2
 #define STM32_PLLCFG_PLLQ       RCC_PLLCFG_PLLQ(7)
@@ -198,29 +198,27 @@
 #define GPIO_USART1_RX	GPIO_USART1_RX_2
 #define GPIO_USART1_TX	GPIO_USART1_TX_2
 
-#define GPIO_USART2_RX	GPIO_USART2_RX_2 //F4BY
-#define GPIO_USART2_TX	GPIO_USART2_TX_2 //F4BY
-#define GPIO_USART2_RTS	GPIO_USART2_RTS_2 //F4BY
-#define GPIO_USART2_CTS	GPIO_USART2_CTS_2 //F4BY
+#define GPIO_USART2_RX	GPIO_USART2_RX_1
+#define GPIO_USART2_TX	GPIO_USART2_TX_1
+#define GPIO_USART2_RTS	GPIO_USART2_RTS_1
+#define GPIO_USART2_CTS	GPIO_USART2_CTS_1
 
-#define GPIO_USART3_RX	GPIO_USART3_RX_3  //F4BY
-#define GPIO_USART3_TX	GPIO_USART3_TX_3  //F4BY
-
-//#define GPIO_UART4_RX	GPIO_UART4_RX_2  //F4BY
-//#define GPIO_UART4_TX	GPIO_UART4_TX_2  //F4BY
+#define GPIO_USART6_RX	GPIO_USART6_RX_1
+#define GPIO_USART6_TX	GPIO_USART6_TX_1
 
 /* UART DMA configuration for USART1/6 */
 #define DMAMAP_USART1_RX DMAMAP_USART1_RX_2
-//#define DMAMAP_USART6_RX DMAMAP_USART6_RX_2 //F4BY
+#define DMAMAP_USART6_RX DMAMAP_USART6_RX_2
  
 /*
  * CAN
  *
- * CAN1 is routed to the expansion connector. //F4BY
+ * CAN2 is routed to the expansion connector.
  */
 
-#define GPIO_CAN1_RX	GPIO_CAN1_RX_3  //F4BY
-#define GPIO_CAN1_TX	GPIO_CAN1_TX_3  //F4BY
+#define GPIO_CAN2_RX	GPIO_CAN2_RX_1
+#define GPIO_CAN2_TX	GPIO_CAN2_TX_1
+
 /*
  * I2C
  *
@@ -238,8 +236,8 @@
 #define GPIO_I2C2_SCL_GPIO	(GPIO_OUTPUT|GPIO_OPENDRAIN|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTB|GPIO_PIN10)
 #define GPIO_I2C2_SDA_GPIO	(GPIO_OUTPUT|GPIO_OPENDRAIN|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTB|GPIO_PIN11)
 
-#define GPIO_I2C3_SCL		GPIO_I2C3_SCL_1 
-#define GPIO_I2C3_SDA		GPIO_I2C3_SDA_1 //F4BY будет конфликт с первым входом радио Tim8_4 надо убрать эту шину
+#define GPIO_I2C3_SCL		GPIO_I2C3_SCL_1
+#define GPIO_I2C3_SDA		GPIO_I2C3_SDA_1
 #define GPIO_I2C3_SCL_GPIO	(GPIO_OUTPUT|GPIO_OPENDRAIN|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTA|GPIO_PIN8)
 #define GPIO_I2C3_SDA_GPIO	(GPIO_OUTPUT|GPIO_OPENDRAIN|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTC|GPIO_PIN9)
 
@@ -248,23 +246,16 @@
  *
  * There are sensors on SPI1, and SPI3 is connected to the microSD slot.
  */
-#define GPIO_SPI1_MISO	GPIO_SPI1_MISO_1//|GPIO_SPEED_50MHz)
+#define GPIO_SPI1_MISO	GPIO_SPI1_MISO_1
 #define GPIO_SPI1_MOSI	(GPIO_SPI1_MOSI_1|GPIO_SPEED_50MHz)
 #define GPIO_SPI1_SCK	(GPIO_SPI1_SCK_1|GPIO_SPEED_50MHz)
 
-#define GPIO_SPI2_MISO	GPIO_SPI2_MISO_1//|GPIO_SPEED_50MHz)   //F4BY
-#define GPIO_SPI2_MOSI	(GPIO_SPI2_MOSI_1|GPIO_SPEED_50MHz) //F4BY
-#define GPIO_SPI2_SCK	(GPIO_SPI2_SCK_2 |GPIO_SPEED_50MHz) //F4BY
-#define GPIO_SPI3_NSS	GPIO_SPI3_NSS_1//|GPIO_SPEED_50MHz) //F4BY
-
-#define GPIO_SPI3_MISO	GPIO_SPI3_MISO_1//|GPIO_SPEED_50MHz)  //F4BY
-#define GPIO_SPI3_MOSI	(GPIO_SPI3_MOSI_1|GPIO_SPEED_50MHz) //F4BY
-#define GPIO_SPI3_SCK	(GPIO_SPI3_SCK_1|GPIO_SPEED_50MHz) //F4BY
-#define GPIO_SPI3_NSS	GPIO_SPI3_NSS_1//|GPIO_SPEED_50MHz) //F4BY
+#define GPIO_SPI3_MISO	GPIO_SPI3_MISO_2
+#define GPIO_SPI3_MOSI	(GPIO_SPI3_MOSI_1|GPIO_SPEED_50MHz)
+#define GPIO_SPI3_SCK	(GPIO_SPI3_SCK_2|GPIO_SPEED_50MHz)
+#define GPIO_SPI3_NSS	GPIO_SPI3_NSS_2
 
 /* SPI DMA configuration for SPI3 (microSD) */
-#define DMACHAN_SPI2_RX DMAMAP_SPI2_RX //F4BY
-#define DMACHAN_SPI2_TX DMAMAP_SPI2_TX //F4BY
 #define DMACHAN_SPI3_RX DMAMAP_SPI3_RX_1
 #define DMACHAN_SPI3_TX DMAMAP_SPI3_TX_2
 /* XXX since we allocate the HP work stack from CCM RAM on normal system startup,

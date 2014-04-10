@@ -164,8 +164,6 @@ __EXPORT int nsh_archinitialize(void)
 	/* configure always-on ADC pins */
 	stm32_configgpio(GPIO_ADC1_IN10);
 	stm32_configgpio(GPIO_ADC1_IN11);
-	stm32_configgpio(GPIO_ADC1_IN12);
-	stm32_configgpio(GPIO_ADC1_IN13);
 	/* IN12 and IN13 further below */
 
 	/* configure the high-resolution time/callout interface */
@@ -225,50 +223,47 @@ __EXPORT int nsh_archinitialize(void)
 	 * Keep the SPI2 init optional and conditionally initialize the ADC pins
 	 */
 
-        #ifdef CONFIG_STM32_SPI2 //f4by
-                spi2 = up_spiinitialize(2);
-                ///* Default SPI2 to 1MHz and de-assert the known chip selects. */
-                //SPI_SETFREQUENCY(spi2, 10000000);
-                //SPI_SETBITS(spi2, 8);
-                //SPI_SETMODE(spi2, SPIDEV_MODE3);
-                //SPI_SELECT(spi2, PX4_SPIDEV_GYRO, false);
-                //SPI_SELECT(spi2, PX4_SPIDEV_ACCEL_MAG, false);
+	#ifdef CONFIG_STM32_SPI2
+		spi2 = up_spiinitialize(2);
+		/* Default SPI2 to 1MHz and de-assert the known chip selects. */
+		SPI_SETFREQUENCY(spi2, 10000000);
+		SPI_SETBITS(spi2, 8);
+		SPI_SETMODE(spi2, SPIDEV_MODE3);
+		SPI_SELECT(spi2, PX4_SPIDEV_GYRO, false);
+		SPI_SELECT(spi2, PX4_SPIDEV_ACCEL_MAG, false);
 
-                message("[boot] Initialized SPI port2\n");
-        #else
-                spi2 = NULL;
-                message("[boot] Enabling IN12/13 instead of SPI2\n");
-                /* no SPI2, use pins for ADC */
-                stm32_configgpio(GPIO_ADC1_IN12);
-                stm32_configgpio(GPIO_ADC1_IN13);        // jumperable to MPU6000 DRDY on some boards
-        #endif
-  
+		message("[boot] Initialized SPI port2 (ADC IN12/13 blocked)\n");
+	#else
+		spi2 = NULL;
+		message("[boot] Enabling IN12/13 instead of SPI2\n");
+		/* no SPI2, use pins for ADC */
+		stm32_configgpio(GPIO_ADC1_IN12);
+		stm32_configgpio(GPIO_ADC1_IN13);	// jumperable to MPU6000 DRDY on some boards
+	#endif
 
-        /* Now bind the SPI interface to the MMCSD driver */
-        result = mmcsd_spislotinitialize(CONFIG_NSH_MMCSDMINOR, CONFIG_NSH_MMCSDSLOTNO, spi2);
+	/* Get the SPI port for the microSD slot */
 
-        if (result != OK) {
-                message("[boot] FAILED to bind SPI port 2 to the MMCSD driver\n");
-                up_ledon(LED_AMBER);
-                return -ENODEV;
-        }
+	message("[boot] Initializing SPI port 3\n");
+	spi3 = up_spiinitialize(3);
 
-        message("[boot] Successfully bound SPI port 2 to the MMCSD driver\n");
+	if (!spi3) {
+		message("[boot] FAILED to initialize SPI port 3\n");
+		up_ledon(LED_AMBER);
+		return -ENODEV;
+	}
 
-message("[boot] Initializing SPI port 3\n");
-        spi3 = up_spiinitialize(3);
-		///* Default SPI3 to 1MHz and de-assert the known chip selects. */
-                SPI_SETFREQUENCY(spi3, 10000000);
-                SPI_SETBITS(spi3, 8);
-                SPI_SETMODE(spi3, SPIDEV_MODE3);
-                SPI_SELECT(spi3, PX4_SPIDEV_GYRO, false);
-                SPI_SELECT(spi3, PX4_SPIDEV_ACCEL_MAG, false);
-        if (!spi3) {
-                message("[boot] FAILED to initialize SPI port 3\n");
-                up_ledon(LED_AMBER);
-                return -ENODEV;
-        }
+	message("[boot] Successfully initialized SPI port 3\n");
 
-        message("[boot] Successfully initialized SPI port 3\n");
-        return OK;//f4by spi2 spi3
+	/* Now bind the SPI interface to the MMCSD driver */
+	result = mmcsd_spislotinitialize(CONFIG_NSH_MMCSDMINOR, CONFIG_NSH_MMCSDSLOTNO, spi3);
+
+	if (result != OK) {
+		message("[boot] FAILED to bind SPI port 3 to the MMCSD driver\n");
+		up_ledon(LED_AMBER);
+		return -ENODEV;
+	}
+
+	message("[boot] Successfully bound SPI port 3 to the MMCSD driver\n");
+
+	return OK;
 }

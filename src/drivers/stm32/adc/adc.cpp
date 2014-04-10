@@ -159,7 +159,6 @@ ADC::ADC(uint32_t channels) :
 	for (unsigned i = 0; i < 32; i++) {
 		if (channels & (1 << i)) {
 			_channel_count++;
-		
 		}
 	}
 	_samples = new adc_msg_s[_channel_count];
@@ -170,7 +169,6 @@ ADC::ADC(uint32_t channels) :
 		for (unsigned i = 0; i < 32; i++) {
 			if (channels & (1 << i)) {
 				_samples[index].am_channel = i;
-                
 				_samples[index].am_data = 0;
 				index++;
 			}
