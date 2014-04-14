@@ -417,6 +417,8 @@ L3GD20::probe()
 			_orientation = SENSOR_BOARD_ROTATION_270_DEG;
 		#elif CONFIG_ARCH_BOARD_PX4FMU_V2
 			_orientation = SENSOR_BOARD_ROTATION_270_DEG;
+		#elif defined(CONFIG_ARCH_BOARD_F4BY)
+			_orientation = SENSOR_BOARD_ROTATION_270_DEG;	
 		#else
 			#error This driver needs a board selection, either CONFIG_ARCH_BOARD_PX4FMU_V1 or CONFIG_ARCH_BOARD_PX4FMU_V2
 		#endif
