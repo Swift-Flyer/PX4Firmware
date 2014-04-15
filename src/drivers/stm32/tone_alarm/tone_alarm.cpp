@@ -148,8 +148,13 @@
 # endif
 #elif TONE_ALARM_TIMER == 9
 # define TONE_ALARM_BASE		STM32_TIM9_BASE
+#if defined(CONFIG_ARCH_BOARD_F4BY)
 # define TONE_ALARM_CLOCK		STM32_APB2_TIM9_CLKIN
 # define TONE_ALARM_CLOCK_ENABLE	RCC_APB2ENR_TIM9EN
+#else
+# define TONE_ALARM_CLOCK              STM32_APB1_TIM9_CLKIN
+# define TONE_ALARM_CLOCK_ENABLE       RCC_APB1ENR_TIM9EN
+#endif
 # ifdef CONFIG_STM32_TIM9
 #  error Must not set CONFIG_STM32_TIM9 when TONE_ALARM_TIMER is 9
 # endif
@@ -364,7 +369,12 @@ ToneAlarm::init()
 	stm32_configgpio(GPIO_TONE_ALARM_IDLE);
 
 	/* clock/power on our timer */
+#if defined(CONFIG_ARCH_BOARD_F4BY)
 	modifyreg32(STM32_RCC_APB2ENR, 0, TONE_ALARM_CLOCK_ENABLE);
+#else
+	modifyreg32(STM32_RCC_APB1ENR, 0, TONE_ALARM_CLOCK_ENABLE);
+#endif	
+	
 
 	/* initialise the timer */
 	rCR1 = 0;

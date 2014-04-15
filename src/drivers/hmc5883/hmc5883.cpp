@@ -853,9 +853,13 @@ HMC5883::collect()
 	if (_bus == PX4_I2C_BUS_ONBOARD) {
 		// convert onboard so it matches offboard for the
 		// scaling below
+#if defined(CONFIG_ARCH_BOARD_F4BY)
 		report.y = -report.y;
-		//report.x = -report.x;//F4BY
-		report.z = -report.z;//F4BY
+		report.z = -report.z;
+#else
+		report.y = -report.y;
+		report.x = -report.x;
+#endif
         }
 #endif
 
