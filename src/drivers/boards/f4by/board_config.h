@@ -60,6 +60,7 @@ __BEGIN_DECLS
 
 /* PX4IO connection configuration */
 #define PX4IO_SERIAL_DEVICE	"/dev/ttyS3" // F4by надо избавится от io проца
+#define UDID_START		0x1FFF7A10
 
 //#ifdef CONFIG_STM32_SPI2
 //#  error "SPI2 is not supported on this board"

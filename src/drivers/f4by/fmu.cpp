@@ -65,6 +65,7 @@
 #include <systemlib/err.h>
 #include <systemlib/mixer/mixer.h>
 #include <systemlib/pwm_limit/pwm_limit.h>
+#include <systemlib/board_serial.h>
 #include <drivers/drv_mixer.h>
 #include <drivers/drv_rc_input.h>
 
@@ -111,7 +112,7 @@ private:
 	static const unsigned _max_actuators = 8;
 #endif
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
-	static const unsigned _max_actuators = 8;
+	static const unsigned _max_actuators = 4;
 #endif
 #if defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
 	static const unsigned _max_actuators = 6;
@@ -220,10 +221,10 @@ F4BYFMU::F4BYFMU() :
 	_armed(false),
 	_pwm_on(false),
 	_mixers(nullptr),
-	_failsafe_pwm( {0}),
-	       _disarmed_pwm( {0}),
-	       _num_failsafe_set(0),
-	       _num_disarmed_set(0)
+	_failsafe_pwm({0}),
+	      _disarmed_pwm({0}),
+	      _num_failsafe_set(0),
+	      _num_disarmed_set(0)
 {
 	for (unsigned i = 0; i < _max_actuators; i++) {
 		_min_pwm[i] = PWM_DEFAULT_MIN;
@@ -589,7 +590,7 @@ F4BYFMU::task_main()
 						if (i >= outputs.noutputs ||
 						    !isfinite(outputs.output[i]) ||
 						    outputs.output[i] < -1.0f ||
-						outputs.output[i] > 1.0f) {
+						    outputs.output[i] > 1.0f) {
 							/*
 							 * Value is NaN, INF or out of band - set to the minimum value.
 							 * This will be clearly visible on the servo status and will limit the risk of accidentally
@@ -639,7 +640,7 @@ F4BYFMU::task_main()
 #ifdef HRT_PPM_CHANNEL
 
 		// see if we have new PPM input data
-		if (ppm_last_valid_decode != rc_in.timestamp) {
+		if (ppm_last_valid_decode != rc_in.timestamp_last_signal) {
 			// we have a new PPM frame. Publish it.
 			rc_in.channel_count = ppm_decoded_channels;
 
@@ -651,7 +652,15 @@ F4BYFMU::task_main()
 				rc_in.values[i] = ppm_buffer[i];
 			}
 
-			rc_in.timestamp = ppm_last_valid_decode;
+			rc_in.timestamp_publication = ppm_last_valid_decode;
+			rc_in.timestamp_last_signal = ppm_last_valid_decode;
+
+			rc_in.rc_ppm_frame_length = ppm_frame_length;
+			rc_in.rssi = RC_INPUT_RSSI_MAX;
+			rc_in.rc_failsafe = false;
+			rc_in.rc_lost = false;
+			rc_in.rc_lost_frame_count = 0;
+			rc_in.rc_total_frame_count = 0;
 
 			/* lazily advertise on first publication */
 			if (to_input_rc == 0) {
@@ -1655,6 +1664,15 @@ fmu_main(int argc, char *argv[])
 		errx(0, "FMU driver stopped");
 	}
 
+	if (!strcmp(verb, "id")) {
+		uint8_t id[12];
+		(void)get_board_serial(id);
+
+		errx(0, "Board serial:\n %02X%02X%02X%02X %02X%02X%02X%02X %02X%02X%02X%02X",
+		     (unsigned)id[0], (unsigned)id[1], (unsigned)id[2], (unsigned)id[3], (unsigned)id[4], (unsigned)id[5],
+		     (unsigned)id[6], (unsigned)id[7], (unsigned)id[8], (unsigned)id[9], (unsigned)id[10], (unsigned)id[11]);
+	}
+
 
 	if (fmu_start() != OK)
 		errx(1, "failed to start the FMU driver");
@@ -1712,7 +1730,11 @@ fmu_main(int argc, char *argv[])
 	}
 
 
-	fprintf(stderr, "FMU: unrecognised command, try:\n");
+	fprintf(stderr, "FMU: unrecognised command %s, try:\n", verb);
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 	fprintf(stderr, "  mode_gpio, mode_serial, mode_pwm, mode_gpio_serial, mode_pwm_serial, mode_pwm_gpio, test\n");
+#elif defined(CONFIG_ARCH_BOARD_PX4FMU_V2)
+	fprintf(stderr, "  mode_gpio, mode_pwm, test, sensor_reset [milliseconds]\n");
+#endif
 	exit(1);
 }
