@@ -228,11 +228,11 @@ __EXPORT int nsh_archinitialize(void)
         #ifdef CONFIG_STM32_SPI2 //f4by
                 spi2 = up_spiinitialize(2);
                 ///* Default SPI2 to 1MHz and de-assert the known chip selects. */
-                //SPI_SETFREQUENCY(spi2, 10000000);
-                //SPI_SETBITS(spi2, 8);
-                //SPI_SETMODE(spi2, SPIDEV_MODE3);
-                //SPI_SELECT(spi2, PX4_SPIDEV_GYRO, false);
-                //SPI_SELECT(spi2, PX4_SPIDEV_ACCEL_MAG, false);
+                SPI_SETFREQUENCY(spi2, 10000000);
+                SPI_SETBITS(spi2, 8);
+                SPI_SETMODE(spi2, SPIDEV_MODE3);
+                SPI_SELECT(spi2, SPIDEV_FLASH, false);
+				SPI_SELECT(spi2, SPIDEV_MMCSD, false);
 
                 message("[boot] Initialized SPI port2\n");
         #else

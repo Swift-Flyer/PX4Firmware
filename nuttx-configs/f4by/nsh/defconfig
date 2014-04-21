@@ -495,7 +495,7 @@ CONFIG_MTD_BYTE_WRITE=y
 # CONFIG_RAMMTD is not set
 # CONFIG_MTD_AT24XX is not set
 # CONFIG_MTD_AT45DB is not set
-# CONFIG_MTD_M25P is not set
+CONFIG_MTD_M25P=y
 # CONFIG_MTD_SMART is not set
 # CONFIG_MTD_RAMTRON is not set
 # CONFIG_MTD_SST25 is not set

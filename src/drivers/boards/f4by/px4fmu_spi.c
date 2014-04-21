@@ -73,6 +73,7 @@ __EXPORT void weak_function stm32_spiinitialize(void)
 	stm32_configgpio(GPIO_SPI_CS_ACCEL);
 	stm32_configgpio(GPIO_SPI_CS_MPU);
 	stm32_configgpio(GPIO_SPI_CS_SDCARD);
+	stm32_configgpio(GPIO_SPI_CS_FLASH);
 
 	/* De-activate all peripherals,
 	 * required for some peripheral
@@ -82,6 +83,7 @@ __EXPORT void weak_function stm32_spiinitialize(void)
 	stm32_gpiowrite(GPIO_SPI_CS_ACCEL, 1);
 	stm32_gpiowrite(GPIO_SPI_CS_MPU, 1);
 	stm32_gpiowrite(GPIO_SPI_CS_SDCARD, 1);
+	stm32_gpiowrite(GPIO_SPI_CS_FLASH, 1);
 }
 
 __EXPORT void stm32_spi1select(FAR struct spi_dev_s *dev, enum spi_dev_e devid, bool selected)
@@ -143,7 +145,17 @@ __EXPORT uint8_t stm32_spi3status(FAR struct spi_dev_s *dev, enum spi_dev_e devi
 __EXPORT void stm32_spi2select(FAR struct spi_dev_s *dev, enum spi_dev_e devid, bool selected)//f4by
 {
 	/* there can only be one device on this bus, so always select it */
-	stm32_gpiowrite(GPIO_SPI_CS_SDCARD, !selected);
+	switch(devid)
+	{
+	case SPIDEV_FLASH:
+		stm32_gpiowrite(GPIO_SPI_CS_FLASH, !selected);
+		stm32_gpiowrite(GPIO_SPI_CS_SDCARD, 1);
+		break;
+	case SPIDEV_MMCSD:		
+		stm32_gpiowrite(GPIO_SPI_CS_SDCARD, !selected);
+		stm32_gpiowrite(GPIO_SPI_CS_FLASH, 1);
+		break;
+	}
 }
 
 __EXPORT uint8_t stm32_spi2status(FAR struct spi_dev_s *dev, enum spi_dev_e devid)//f4by

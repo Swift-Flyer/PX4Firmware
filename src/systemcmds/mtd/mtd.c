@@ -160,11 +160,7 @@ static void
 ramtron_attach(void)
 {
 	/* find the right spi */
-#if defined(CONFIG_ARCH_BOARD_F4BY)
-	struct spi_dev_s *spi = up_spiinitialize(3);
-#else
 	struct spi_dev_s *spi = up_spiinitialize(2);
-#endif	
 	
 	/* this resets the spi bus, set correct bus speed again */
 	SPI_SETFREQUENCY(spi, 10 * 1000 * 1000);
@@ -199,8 +195,48 @@ ramtron_attach(void)
 
 	attached = true;
 }
-#else
+#elif defined(CONFIG_ARCH_BOARD_F4BY)
+static void
+m25px_attach(void)
+{
+	struct spi_dev_s *spi = up_spiinitialize(2);
+	
+	/* this resets the spi bus, set correct bus speed again */
+	SPI_SETFREQUENCY(spi, 10 * 1000 * 1000);
+	SPI_SETBITS(spi, 8);
+	SPI_SETMODE(spi, SPIDEV_MODE3);
+	SPI_SELECT(spi, SPIDEV_FLASH, false);
 
+	if (spi == NULL)
+		errx(1, "failed to locate spi bus");
+
+	/* start the RAMTRON driver, attempt 5 times */
+	for (int i = 0; i < 5; i++) {
+		mtd_dev = m25p_initialize(spi);
+
+		if (mtd_dev) {
+			/* abort on first valid result */
+			if (i > 0) {
+				warnx("warning: mtd needed %d attempts to attach", i + 1);
+			}
+
+			break;
+		}
+	}
+
+	/* if last attempt is still unsuccessful, abort */
+	if (mtd_dev == NULL)
+	{
+		errx(1, "failed to initialize mtd driver. f4by");
+	}
+
+	int ret = mtd_dev->ioctl(mtd_dev, MTDIOC_SETSPEED, (unsigned long)10*1000*1000);
+        if (ret != OK)
+            warnx(1, "failed to set bus speed");
+
+	attached = true;
+}
+#else
 static void
 at24xxx_attach(void)
 {
@@ -241,8 +277,10 @@ mtd_start(char *partition_names[], unsigned n_partitions)
 		errx(1, "mtd already mounted");
 
 	if (!attached) {
-		#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1) || defined(CONFIG_ARCH_BOARD_F4BY)
+		#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 		at24xxx_attach();
+		#elif defined(CONFIG_ARCH_BOARD_F4BY)
+		m25px_attach();
 		#else
 		ramtron_attach();
 		#endif
@@ -327,7 +365,6 @@ int mtd_get_geometry(unsigned long *blocksize, unsigned long *erasesize, unsigne
 		warnx("ERROR: mtd->ioctl failed: %d", ret);
 		return ret;
 	}
-
 	*blocksize = geo.blocksize;
 	*erasesize = geo.blocksize;
 	*neraseblocks = geo.neraseblocks;
