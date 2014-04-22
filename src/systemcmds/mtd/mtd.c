@@ -324,11 +324,13 @@ mtd_start(char *partition_names[], unsigned n_partitions)
 		}
 
 		/* Initialize to provide an FTL block driver on the MTD FLASH interface */
-
-		snprintf(blockname, sizeof(blockname), "/dev/mtdblock%d", i);
-
+#if defined(CONFIG_ARCH_BOARD_F4BY)
+		snprintf(blockname, sizeof(blockname), "/dev/smart%d", i);	
+		ret = smart_initialize(i, part[i], NULL);
+#else	
+		snprintf(blockname, sizeof(blockname), "/dev/mtdblock%d", i);	
 		ret = ftl_initialize(i, part[i]);
-
+#endif		
 		if (ret < 0) {
 			warnx("ERROR: ftl_initialize %s failed: %d", blockname, ret);
 			fflush(stderr);
@@ -366,7 +368,7 @@ int mtd_get_geometry(unsigned long *blocksize, unsigned long *erasesize, unsigne
 		return ret;
 	}
 	*blocksize = geo.blocksize;
-	*erasesize = geo.blocksize;
+	*erasesize = geo.erasesize;
 	*neraseblocks = geo.neraseblocks;
 
 	/* Determine the size of each partition.  Make each partition an even
