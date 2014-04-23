@@ -63,6 +63,7 @@
 #include "systemlib/err.h"
 
 #include <board_config.h>
+#include <errno.h>
 
 __EXPORT int mtd_main(int argc, char *argv[]);
 
@@ -291,6 +292,39 @@ mtd_start(char *partition_names[], unsigned n_partitions)
 		exit(1);
 	}
 
+
+		/* Initialize to provide an FTL block driver on the MTD FLASH interface */
+#if defined(CONFIG_ARCH_BOARD_F4BY)
+	ret = smart_initialize(1, mtd_dev, NULL);
+	if (ret < 0)
+    {
+      warnx("ERROR: SMART initialization failed: %d\n", -ret);
+//      msgflush();
+      exit(2);
+    }
+
+  /* Creaet a SMARTFS filesystem */
+
+  //ret = mksmartfs("/dev/smart1");
+
+  /* Mount the file system */
+
+  ret = mount("/dev/smart1", "/mnt/smart", "smartfs", 0, NULL);
+  if(ret < 0)
+  {
+  	//create fs and mount
+  	printf("Creating samrtfs...");
+  	ret = mksmartfs("/dev/smart1");
+  	printf("OK\n");
+  	ret = mount("/dev/smart1", "/mnt/smart", "smartfs", 0, NULL);
+  }
+  if (ret < 0)
+    {
+      warnx("ERROR: Failed to mount the SMART volume: %d\n", errno);
+//      msgflush();
+      exit(3);
+    }
+#else	
 	unsigned long blocksize, erasesize, neraseblocks;
 	unsigned blkpererase, nblocks, partsize;
 
@@ -322,15 +356,8 @@ mtd_start(char *partition_names[], unsigned n_partitions)
 			fflush(stderr);
 			exit(4);
 		}
-
-		/* Initialize to provide an FTL block driver on the MTD FLASH interface */
-#if defined(CONFIG_ARCH_BOARD_F4BY)
-		snprintf(blockname, sizeof(blockname), "/dev/smart%d", i);	
-		ret = smart_initialize(i, part[i], NULL);
-#else	
 		snprintf(blockname, sizeof(blockname), "/dev/mtdblock%d", i);	
 		ret = ftl_initialize(i, part[i]);
-#endif		
 		if (ret < 0) {
 			warnx("ERROR: ftl_initialize %s failed: %d", blockname, ret);
 			fflush(stderr);
@@ -348,7 +375,8 @@ mtd_start(char *partition_names[], unsigned n_partitions)
 		}
 	}
 
-	n_partitions_current = n_partitions;
+	n_partitions_current = n_partitions;		
+#endif		
 
 	started = true;
 	exit(0);
@@ -467,6 +495,7 @@ mtd_erase(char *partition_names[], unsigned n_partitions)
 void
 mtd_readtest(char *partition_names[], unsigned n_partitions)
 {
+#if !defined(CONFIG_ARCH_BOARD_F4BY)
 	ssize_t expected_size = mtd_get_partition_size();
 
 	uint8_t v[128];
@@ -485,6 +514,7 @@ mtd_readtest(char *partition_names[], unsigned n_partitions)
 		}
 		close(fd);
 	}
+#endif	
 	printf("readtest OK\n");
 	exit(0);
 }
