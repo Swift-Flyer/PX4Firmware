@@ -54,3 +54,6 @@ SRCS		 = err.c \
 		   board_serial.c \
 		   pwm_limit/pwm_limit.c
 
+ifeq ($(BOARD),f4by)
+SRCS		+= ppm_decode.c
+endif

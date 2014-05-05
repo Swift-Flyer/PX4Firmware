@@ -205,10 +205,10 @@ __BEGIN_DECLS
 
 /* High-resolution timer
  */
-#define HRT_TIMER		3	/* use timer3 for the HRT *///F4BY
+#define HRT_TIMER		8	/* use timer3 for the HRT *///F4BY
 #define HRT_TIMER_CHANNEL	1	/* use capture/compare channel 1 */
-#define HRT_PPM_CHANNEL		2	/* use capture/compare channel 2 *///F4BY
-#define GPIO_PPM_IN		(GPIO_ALT|GPIO_AF2|GPIO_SPEED_50MHz|GPIO_PULLUP|GPIO_PORTC|GPIO_PIN7)//F4BY
+//#define HRT_PPM_CHANNEL		2	/* use capture/compare channel 2 *///F4BY
+//#define GPIO_PPM_IN		(GPIO_ALT|GPIO_AF2|GPIO_SPEED_50MHz|GPIO_PULLUP|GPIO_PORTC|GPIO_PIN7)//F4BY
 
 /****************************************************************************************************
  * Public Types

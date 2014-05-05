@@ -66,6 +66,9 @@
 
 #include <drivers/drv_hrt.h>
 #include <drivers/drv_led.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_F4BY
+#include <drivers/drv_rc.h>
+#endif
 
 #include <systemlib/cpuload.h>
 
@@ -170,6 +173,9 @@ __EXPORT int nsh_archinitialize(void)
 
 	/* configure the high-resolution time/callout interface */
 	hrt_init();
+#if CONFIG_HAL_BOARD == HAL_BOARD_F4BY
+	rc_init();
+#endif	
 
 	/* configure CPU load estimation */
 #ifdef CONFIG_SCHED_INSTRUMENTATION
