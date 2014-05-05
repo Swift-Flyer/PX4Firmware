@@ -52,3 +52,6 @@ SRCS		 = err.c \
 		   rc_check.c \
 		   otp.c
 
+ifeq ($(BOARD),f4by)
+SRCS		+= ppm_decode.c
+endif
