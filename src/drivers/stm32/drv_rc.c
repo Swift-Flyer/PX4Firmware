@@ -54,6 +54,7 @@ static int		rc_tim_isr(int irq, void *context);
 void rc_init(void)
 {
 	printf("init rc");
+	unregister_driver("/dev/ttyS4");
 	irq_attach(HRT_TIMER_VECTOR, rc_tim_isr);
 
 	/* clock/power on our timer */
