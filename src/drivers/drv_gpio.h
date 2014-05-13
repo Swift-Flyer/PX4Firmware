@@ -73,6 +73,7 @@
  */
 # define F4BY_DEVICE_PATH	"/dev/f4by"
 # define PX4IO_DEVICE_PATH	"/dev/px4io"
+# define F4BY_INPUT_DEVICE_PATH "/dev/f4by_input"
 
 #endif
 
