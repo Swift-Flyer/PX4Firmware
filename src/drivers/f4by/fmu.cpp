@@ -73,7 +73,7 @@
 #include <uORB/topics/actuator_armed.h>
 
 
-#if 1
+#if HRT_PPM_CHANNEL
 # include <systemlib/ppm_decode.h>
 #endif
 
@@ -483,7 +483,7 @@ F4BYFMU::task_main()
 	fds[1].fd = _t_actuator_armed;
 	fds[1].events = POLLIN;
 
-#if 1
+#if HRT_PPM_CHANNEL
 	// rc input, published to ORB
 	struct rc_input_values rc_in;
 	orb_advert_t to_input_rc = 0;
@@ -636,7 +636,7 @@ F4BYFMU::task_main()
 			}
 		}
 
-#if 1
+#if HRT_PPM_CHANNEL
 
 		// see if we have new PPM input data
 		if (ppm_last_valid_decode != rc_in.timestamp) {
