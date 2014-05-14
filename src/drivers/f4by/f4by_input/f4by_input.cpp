@@ -65,6 +65,8 @@
 //#include <drivers/vrbrain/vrinput/controls/controls.h>
 #include <uORB/topics/rc_channels.h>
 #include <drivers/drv_rc_input.h>
+#include <drivers/drv_rc.h>
+#include <systemlib/ppm_decode.h>
 
 #ifndef ARDUPILOT_BUILD
 # define RC_HANDLING_DEFAULT false
@@ -110,6 +112,13 @@ public:
 	 */
 private:
 	// XXX
+	enum InputType
+	{
+		ePPM = 1,
+		ePPMSUM,
+		eSBUS,
+		eDSM
+	};
 
 	unsigned		_max_rc_input;		///< Maximum receiver channels supported by PX4IO
 
@@ -176,6 +185,67 @@ F4BY_INPUT::~F4BY_INPUT()
 	g_dev = nullptr;
 }
 
+#if 0
+uint8_t RC_Init()
+{
+ GPIO_InitTypeDef GPIO_InitStructure;
+ 
+ uint8_t i;
+ uint8_t test = 0x5a; 
+ uint8_t sbus = 0;
+ uint8_t sppm = 0; 
+ 
+ /* ïîäàäèì òàêò íà ïîðò */
+  RCC_APB1PeriphClockCmd(RC_SelectGPIO_RCC, ENABLE);
+  /* íàñòðîéêà âõîäîâ ïîðòà */
+  GPIO_InitStructure.GPIO_Pin  = RC_SelectGPIO_SBUSPin|RC_SelectGPIO_PPMPin;  
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_2MHz;
+  GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IN;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
+  GPIO_Init(RC_SelectGPIO, &GPIO_InitStructure);
+ /* âûõîä */
+ GPIO_InitStructure.GPIO_Pin  = RC_SelectGPIO_OutPin; 
+ GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_OUT;  
+ GPIO_Init(RC_SelectGPIO, &GPIO_InitStructure);
+ 
+ for(i = 0;i<32;i++)
+ {  
+  if ((test>>(i&0x07))&0x01) {
+   GPIO_SetBits(RC_SelectGPIO,RC_SelectGPIO_OutPin);
+   while (!GPIO_ReadOutputDataBit(RC_SelectGPIO,RC_SelectGPIO_OutPin));
+   if (!GPIO_ReadInputDataBit(RC_SelectGPIO,RC_SelectGPIO_SBUSPin)) sbus++;  
+   if (!GPIO_ReadInputDataBit(RC_SelectGPIO,RC_SelectGPIO_PPMPin)) sppm++;
+   
+  } else {
+   GPIO_ResetBits(RC_SelectGPIO,RC_SelectGPIO_OutPin);
+   while (GPIO_ReadOutputDataBit(RC_SelectGPIO,RC_SelectGPIO_OutPin));
+   if (GPIO_ReadInputDataBit(RC_SelectGPIO,RC_SelectGPIO_SBUSPin)) sbus++;  
+   if (GPIO_ReadInputDataBit(RC_SelectGPIO,RC_SelectGPIO_PPMPin)) sppm++;
+  }
+ }
+
+#ifdef _F4BY_V2_
+ if (sbus==0) {
+  USART_SBUS_Config();
+  RCSource = RC_SBUS;
+  return RCSource;
+ }
+#endif /* _F4BY_V2_*/  
+ 
+ if (sppm==0) {
+  RC_SPPM_Config();
+  RCSource =  RC_SPPM;
+  return RCSource;
+ }
+ 
+ #endif
+ 
+ Init_PPM(1000000,1000000);
+ RCSource =  RC_PWM;
+ return RCSource;
+}
+
 int
 F4BY_INPUT::init()
 {
@@ -229,22 +299,58 @@ extern "C" bool   dsm_input(uint16_t *values, uint16_t *num_values);
 extern "C" int    sbus_init(const char *device);
 extern "C" bool   sbus_input(uint16_t *values, uint16_t *num_values, uint16_t *rssi, uint16_t max_channels);
 
+static bool
+ppm_input(uint16_t *values, uint16_t *num_values)
+{
+	bool result = false;
+
+	/* avoid racing with PPM updates */
+	irqstate_t state = irqsave();
+
+	/*
+	 * If we have received a new PPM frame within the last 200ms, accept it
+	 * and then invalidate it.
+	 */
+	if (hrt_elapsed_time(&ppm_last_valid_decode) < 200000) {
+
+		/* PPM data exists, copy it */
+		*num_values = ppm_decoded_channels;
+		if (*num_values > 16)
+			*num_values = 16;
+
+		for (unsigned i = 0; i < *num_values; i++)
+			values[i] = ppm_buffer[i];
+
+		/* clear validity */
+		ppm_last_valid_decode = 0;
+
+		/* good if we got any channels */
+		result = (*num_values > 0);
+	}
+
+	irqrestore(state);
+
+	return result;
+}
 
 void F4BY_INPUT::controls_tick()
 {
 	uint16_t r_raw_rc_values[18] = {0};
 	uint16_t r_raw_rc_count = 18;
 	uint16_t rssi;
-	bool sbus_updated = sbus_input(r_raw_rc_values, &r_raw_rc_count, &rssi, 18 /* XXX this should be INPUT channels, once untangled */);
-	if(sbus_updated)
-	{
-		struct rc_input_values rc_in;
+	
+	struct rc_input_values rc_in;
 
-		memset(&rc_in, 0, sizeof(rc_in));
-		rc_in.input_source = RC_INPUT_SOURCE_PX4FMU_PPM;
-		
+	memset(&rc_in, 0, sizeof(rc_in));
+	rc_in.input_source = RC_INPUT_SOURCE_PX4FMU_PPM;
+	
+	//perf_begin(c_gather_dsm);
+	uint16_t temp_count = r_raw_rc_count;
+	bool dsm_updated = dsm_input(r_raw_rc_values, &temp_count);
+	if (dsm_updated) {
+
+		r_raw_rc_count = temp_count & 0x7fff;
 		rc_in.channel_count = r_raw_rc_count;
-
 		if (rc_in.channel_count > RC_INPUT_MAX_CHANNELS) {
 			rc_in.channel_count = RC_INPUT_MAX_CHANNELS;
 		}
@@ -254,7 +360,56 @@ void F4BY_INPUT::controls_tick()
 		}
 
 		rc_in.timestamp = hrt_absolute_time();
+		
+		rssi = 255;
+	}
+	//perf_end(c_gather_dsm);
+	
+	
+	
+	
+	//perf_begin(c_gather_sbus);
+	bool sbus_updated = sbus_input(r_raw_rc_values, &r_raw_rc_count, &rssi, 18 /* XXX this should be INPUT channels, once untangled */);
+	if(sbus_updated)
+	{
+		rc_in.channel_count = r_raw_rc_count;
+		if (rc_in.channel_count > RC_INPUT_MAX_CHANNELS) {
+			rc_in.channel_count = RC_INPUT_MAX_CHANNELS;
+		}
 
+		for (uint8_t i = 0; i < rc_in.channel_count; i++) {
+			rc_in.values[i] = r_raw_rc_values[i];
+		}
+
+		rc_in.timestamp = hrt_absolute_time();
+	}
+	//perf_end(c_gather_sbus);
+	
+	
+	//perf_begin(c_gather_ppm);
+	bool ppm_updated = ppm_input(r_raw_rc_values, &r_raw_rc_count);
+	ppm_updated = 1;
+	if (ppm_updated) {
+
+		/* XXX sample RSSI properly here */
+		rssi = 255;
+
+		rc_in.channel_count = r_raw_rc_count;
+		if (rc_in.channel_count > RC_INPUT_MAX_CHANNELS) {
+			rc_in.channel_count = RC_INPUT_MAX_CHANNELS;
+		}
+
+		for (uint8_t i = 0; i < rc_in.channel_count; i++) {
+			rc_in.values[i] = r_raw_rc_values[i];
+			rc_in.values[i] = 1400;
+		}
+
+		rc_in.timestamp = hrt_absolute_time();
+	}
+	//perf_end(c_gather_ppm);
+	
+	if(sbus_updated || dsm_updated || ppm_updated)
+	{
 		/* lazily advertise on first publication */
 		if (_to_input_rc == 0) {
 			_to_input_rc = orb_advertise(ORB_ID(input_rc), &rc_in);
@@ -265,16 +420,39 @@ void F4BY_INPUT::controls_tick()
 	}
 }
 
-
-
 void F4BY_INPUT::controls_init()
 {
-	/* DSM input (USART6) */
-	//dsm_init("/dev/ttyS4");
-	//unregister_driver("/dev/ttyS4");
+	InputType inputType = ePPM;
+	
+	if(inputType == eDSM)
+	{
+		/* DSM input (USART6) */
+		dsm_init("/dev/ttyS4");
+	}
+	else
+	{
+		unregister_driver("/dev/ttyS4");
+		if(inputType == eSBUS)
+		{
+			/* S.bus input (USART4) */
+			sbus_init("/dev/ttyS3");
+		}
+		else if(inputType == ePPMSUM)
+		{
+			rc_init();
+		}
+		else if(inputType == ePPM)
+		{
+			rc_init();
+		}
+		else
+		{
+			//error. unknown input source
+		}
+	}
+	
 
-	/* S.bus input (USART4) */
-	sbus_init("/dev/ttyS3");
+	
 }
 
 int
