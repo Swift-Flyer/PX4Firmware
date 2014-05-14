@@ -55,5 +55,5 @@ SRCS		 = err.c \
 		   pwm_limit/pwm_limit.c
 
 ifeq ($(BOARD),f4by)
-SRCS		+= ppm_decode.c
+SRCS		+=  ppm_decode.c
 endif
