@@ -4,6 +4,6 @@
 
 __BEGIN_DECLS
 
-__EXPORT extern void rc_init(void);
+__EXPORT extern void rc_init(bool startPPMSUM);
 
 __END_DECLS

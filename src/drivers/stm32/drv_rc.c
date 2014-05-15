@@ -124,9 +124,12 @@
 
 static int		rc_tim_isr(int irq, void *context);
 
-void rc_init(void)
+static bool _startPPMSUM = false;
+
+void rc_init(bool startPPMSUM)
 {
-	if(0)
+	_startPPMSUM = startPPMSUM;
+	if(_startPPMSUM)
 	{
 		irq_attach(HRT_TIMER_VECTOR, rc_tim_isr);
 
@@ -267,7 +270,7 @@ static uint16_t ppm_temp_buffer[PPM_MAX_CHANNELS];
 static int
 rc_tim_isr(int irq, void *context)
 {
-	if(1)
+	if(!_startPPMSUM)
 	{
 	
 		uint32_t status;
@@ -282,28 +285,15 @@ rc_tim_isr(int irq, void *context)
 			TIM3_rSR = ~status;
 
 		
-			if(status & GTIM_SR_CC4IF) /* input capture channel1? */
+			if(status & GTIM_SR_CC4IF) /* input capture channel4? */
 			{					
 				proceedChannel(TIM3_rCCER, GTIM_CCER_CC4P, TIM3_rCCR4, 0)
-	/*			if(TIM3_rCCER & GTIM_CCER_CC4P) //failing
-				{
-					TIM3_rCCER &= ~GTIM_CCER_CC4P;
-					cTime = TIM3_rCCR4;
-					dTime = calcWidth(cTime, ppm_temp_buffer[0]);
-					if (PPM_MIN_CHANNEL_VALUE < dTime && dTime < PPM_MAX_CHANNEL_VALUE) 
-						ppm_buffer[0] = dTime;
-				}
-				else
-				{
-					ppm_temp_buffer[0] = TIM3_rCCR4;
-					TIM3_rCCER |= GTIM_CCER_CC4P;
-				}*/
 			}
-			if(status & GTIM_SR_CC3IF) /* input capture channel2? */
+			if(status & GTIM_SR_CC3IF) /* input capture channel3? */
 			{
 				proceedChannel(TIM3_rCCER, GTIM_CCER_CC3P, TIM3_rCCR3, 1)
 			}
-			if(status & GTIM_SR_CC1IF) /* input capture channel3? */
+			if(status & GTIM_SR_CC1IF) /* input capture channel1? */
 			{
 				proceedChannel(TIM3_rCCER, GTIM_CCER_CC1P, TIM3_rCCR1, 2)
 			
@@ -313,7 +303,7 @@ rc_tim_isr(int irq, void *context)
 					ppm_last_valid_decode = hrt_absolute_time();
 				}			
 			}
-			if(status & GTIM_SR_CC2IF) /* input capture channel4? */
+			if(status & GTIM_SR_CC2IF) /* input capture channel2? */
 			{					
 				proceedChannel(TIM3_rCCER, GTIM_CCER_CC2P, TIM3_rCCR2, 3)
 			}		
@@ -322,18 +312,19 @@ rc_tim_isr(int irq, void *context)
 		{
 			status = TIM4_rSR;
 			TIM4_rSR = ~status;
-			if(status & GTIM_SR_CC3IF) /* input capture channel5? */
+			if(status & GTIM_SR_CC3IF) /* input capture channel3? */
 			{
 				proceedChannel(TIM4_rCCER, GTIM_CCER_CC3P, TIM4_rCCR3, 4)
 			}
-			if(status & GTIM_SR_CC4IF) {					/* input capture channel6? */
+			if(status & GTIM_SR_CC4IF) /* input capture channel4? */
+			{
 				proceedChannel(TIM4_rCCER, GTIM_CCER_CC4P, TIM4_rCCR4, 5)
 			}
-			if(status & GTIM_SR_CC1IF) /* input capture channel7? */
+			if(status & GTIM_SR_CC1IF) /* input capture channel1? */
 			{
 				proceedChannel(TIM4_rCCER, GTIM_CCER_CC1P, TIM4_rCCR1, 6)
 			}
-			if(status & GTIM_SR_CC2IF) /* input capture channel8? */
+			if(status & GTIM_SR_CC2IF) /* input capture channel2? */
 			{
 				proceedChannel(TIM4_rCCER, GTIM_CCER_CC2P, TIM4_rCCR2, 7)
 			}
