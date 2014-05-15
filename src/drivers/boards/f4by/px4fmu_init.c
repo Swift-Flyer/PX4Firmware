@@ -173,10 +173,6 @@ __EXPORT int nsh_archinitialize(void)
 
 	/* configure the high-resolution time/callout interface */
 	hrt_init();
-#if CONFIG_HAL_BOARD == HAL_BOARD_F4BY
-	rc_init();
-#endif	
-
 	/* configure CPU load estimation */
 #ifdef CONFIG_SCHED_INSTRUMENTATION
 	cpuload_initialize_once();
