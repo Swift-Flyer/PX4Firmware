@@ -305,6 +305,7 @@ void F4BY_INPUT::controls_tick()
 	}
 	if(updated)
 	{
+		rc_in.channel_count = r_raw_rc_count;
 		if (rc_in.channel_count > RC_INPUT_MAX_CHANNELS) 
 		{
 			rc_in.channel_count = RC_INPUT_MAX_CHANNELS;
@@ -314,7 +315,6 @@ void F4BY_INPUT::controls_tick()
 		{
 			rc_in.values[i] = r_raw_rc_values[i];
 		}
-		rc_in.channel_count = r_raw_rc_count;
 		rc_in.timestamp = hrt_absolute_time();
 		/* lazily advertise on first publication */
 		if (_to_input_rc == 0) {
