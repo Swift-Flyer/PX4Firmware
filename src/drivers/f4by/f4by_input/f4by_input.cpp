@@ -315,7 +315,8 @@ void F4BY_INPUT::controls_tick()
 		{
 			rc_in.values[i] = r_raw_rc_values[i];
 		}
-		rc_in.timestamp = hrt_absolute_time();
+		rc_in.timestamp_publication = hrt_absolute_time();
+		rc_in.timestamp_last_signal = hrt_absolute_time();
 		/* lazily advertise on first publication */
 		if (_to_input_rc == 0) {
 			_to_input_rc = orb_advertise(ORB_ID(input_rc), &rc_in);
