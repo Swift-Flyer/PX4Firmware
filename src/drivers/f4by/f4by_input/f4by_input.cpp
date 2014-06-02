@@ -130,6 +130,8 @@ private:
 	/* advertised topics */
 	orb_advert_t 		_to_input_rc;		///< rc inputs from io
 	InputType 			_inputType;
+	uint16_t	r_raw_rc_values[18];
+	uint16_t	r_raw_rc_count;
 	/**
 	 * Trampoline to the worker task
 	 */
@@ -222,7 +224,7 @@ out:
 }
 
 extern "C" int    dsm_init(const char *device);
-extern "C" bool   dsm_input(uint16_t *values, uint16_t *num_values);
+extern "C" bool   dsm_input(uint16_t *values, uint16_t *num_values, uint16_t *rssi);
 
 extern "C" int    sbus_init(const char *device);
 extern "C" bool   sbus_input(uint16_t *values, uint16_t *num_values, uint16_t *rssi, uint16_t max_channels);
@@ -263,10 +265,8 @@ ppm_input(uint16_t *values, uint16_t *num_values)
 
 void F4BY_INPUT::controls_tick()
 {
-	uint16_t r_raw_rc_values[18] = {0};
-	uint16_t r_raw_rc_count = 18;
 	uint16_t rssi;
-	
+
 	struct rc_input_values rc_in;
 
 	memset(&rc_in, 0, sizeof(rc_in));
@@ -277,14 +277,7 @@ void F4BY_INPUT::controls_tick()
 	if(_inputType == eDSM)
 	{
 		//perf_begin(c_gather_dsm);
-		uint16_t temp_count = r_raw_rc_count;
-		updated = dsm_input(r_raw_rc_values, &temp_count);
-		if (updated) {
-
-			r_raw_rc_count = temp_count & 0x7fff;		
-			rssi = 255;
-		}
-		//perf_end(c_gather_dsm);
+		updated = dsm_input(r_raw_rc_values, &r_raw_rc_count, &rssi);
 	}
 	else if(_inputType == eSBUS)
 	{
@@ -315,6 +308,7 @@ void F4BY_INPUT::controls_tick()
 		{
 			rc_in.values[i] = r_raw_rc_values[i];
 		}
+		rc_in.rssi = rssi;
 		rc_in.timestamp_publication = hrt_absolute_time();
 		rc_in.timestamp_last_signal = hrt_absolute_time();
 		/* lazily advertise on first publication */
@@ -324,6 +318,8 @@ void F4BY_INPUT::controls_tick()
 		} else {
 			orb_publish(ORB_ID(input_rc), _to_input_rc, &rc_in);
 		}
+		r_raw_rc_count = 0;
+		r_raw_rc_values[18] = {0};
 	}
 }
 
@@ -348,7 +344,8 @@ void F4BY_INPUT::controls_init()
 	uint8_t dsm = 0;
 	uint8_t sbus = 0;
 	uint8_t sppm = 0; 
-
+	r_raw_rc_values[18] = {0};
+	r_raw_rc_count = 0;
 
 
 	for(i = 0;i<32;i++)

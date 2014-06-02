@@ -60,6 +60,8 @@ static uint8_t dsm_frame[DSM_FRAME_SIZE];	/**< DSM dsm frame receive buffer */
 static unsigned dsm_partial_frame_count;	/**< Count of bytes received for current dsm frame */
 static unsigned dsm_channel_shift;			/**< Channel resolution, 0=unknown, 1=10 bit, 2=11 bit */
 static unsigned dsm_frame_drops;			/**< Count of incomplete DSM frames */
+static	bool	dsm_2pack;			// dsm frame can be 1 or 2 pack of 16 byte
+static	uint8_t dsm_frame_packet;
 
 /**
  * Attempt to decode a single channel raw channel datum
@@ -121,9 +123,15 @@ dsm_guess_format(bool reset)
 		cs11 = 0;
 		samples = 0;
 		dsm_channel_shift = 0;
+		dsm_2pack = false;
+		dsm_frame_packet = 0;
 		return;
 	}
-
+		/* XXX if we cared, we could look for the phase bit here to decide 1 vs. 2-dsm_frame format */
+		if ((uint8_t)dsm_frame[2] & 0x80) {
+		    /* second packet of frame data */
+		    dsm_2pack = true;
+		}
 	/* scan the channels in the current dsm_frame in both 10- and 11-bit mode */
 	for (unsigned i = 0; i < DSM_FRAME_CHANNELS; i++) {
 
@@ -138,7 +146,6 @@ dsm_guess_format(bool reset)
 		if (dsm_decode_channel(raw, 11, &channel, &value) && (channel < 31))
 			cs11 |= (1 << channel);
 
-		/* XXX if we cared, we could look for the phase bit here to decide 1 vs. 2-dsm_frame format */
 	}
 
 	/* wait until we have seen plenty of frames - 5 should normally be enough */
@@ -209,6 +216,8 @@ dsm_init(const char *device)
 	POWER_SPEKTRUM(true);
 #endif
 
+	dsm_2pack = false;
+	dsm_frame_packet = 0;
 	if (dsm_fd < 0)
 		dsm_fd = open(device, O_RDONLY | O_NONBLOCK);
 
@@ -351,6 +360,11 @@ dsm_decode(hrt_abstime frame_time, uint16_t *values, uint16_t *num_values)
 	 * seven channels are being transmitted.
 	 */
 
+		if (((uint8_t)dsm_frame[2] & 0x80) && dsm_2pack) {
+		    /* second packet of frame data */
+			dsm_frame_packet = 1;
+		}
+
 	for (unsigned i = 0; i < DSM_FRAME_CHANNELS; i++) {
 
 		uint8_t *dp = &dsm_frame[2 + (2 * i)];
@@ -400,11 +414,6 @@ dsm_decode(hrt_abstime frame_time, uint16_t *values, uint16_t *num_values)
 		values[channel] = value;
 	}
 
-	if (dsm_channel_shift == 11) {
-		/* Set the 11-bit data indicator */
-		*num_values |= 0x8000;
-	}
-
 	/*
 	 * XXX Note that we may be in failsafe here; we need to work out how to detect that.
 	 */
@@ -428,10 +437,11 @@ dsm_decode(hrt_abstime frame_time, uint16_t *values, uint16_t *num_values)
  *
  * @param[out] values pointer to per channel array of decoded values
  * @param[out] num_values pointer to number of raw channel values returned, high order bit 0:10 bit data, 1:11 bit data
+ * @param[out] rssi pointer to rssi for failsafe if conection lost
  * @return true=decoded raw channel values updated, false=no update
  */
 bool
-dsm_input(uint16_t *values, uint16_t *num_values)
+dsm_input(uint16_t *values, uint16_t *num_values, uint16_t *rssi)
 {
 	ssize_t		ret;
 	hrt_abstime	now;
@@ -439,10 +449,12 @@ dsm_input(uint16_t *values, uint16_t *num_values)
 	/*
 	 */
 	now = hrt_absolute_time();
+	*rssi = 255;
 
 	if ((now - dsm_last_rx_time) > 5000) {
 		if (dsm_partial_frame_count > 0) {
 			dsm_frame_drops++;
+			*rssi = 100;
 			dsm_partial_frame_count = 0;
 		}
 	}
@@ -454,8 +466,13 @@ dsm_input(uint16_t *values, uint16_t *num_values)
 	ret = read(dsm_fd, &dsm_frame[dsm_partial_frame_count], DSM_FRAME_SIZE - dsm_partial_frame_count);
 
 	/* if the read failed for any reason, just give up here */
-	if (ret < 1)
-		return false;
+	if (ret < 1) {
+	    if ((now - dsm_last_rx_time) > 22000*10) {
+		/* report that we failed to read anything valid off the receiver */
+		*rssi = 0;
+	    }
+	    return false;
+	}
 
 	dsm_last_rx_time = now;
 
@@ -475,5 +492,12 @@ dsm_input(uint16_t *values, uint16_t *num_values)
 	 * decode it.
 	 */
 	dsm_partial_frame_count = 0;
-	return dsm_decode(now, values, num_values);
+	bool decode = dsm_decode(now, values, num_values);
+	if (dsm_2pack && decode) {
+	    switch (dsm_frame_packet) {
+		case 0: return false;
+		case 1: dsm_frame_packet = 0;
+			return decode;
+	    }
+	} else	return decode;
 }
