@@ -97,6 +97,7 @@ static int	mtd_get_geometry(unsigned long *blocksize, unsigned long *erasesize, 
 	unsigned *blkpererase, unsigned *nblocks, unsigned *partsize, unsigned n_partitions);
 
 static bool attached = false;
+static bool is_m25_attached = false;
 static bool started = false;
 static struct mtd_dev_s *mtd_dev;
 static unsigned n_partitions_current = 0;
@@ -186,6 +187,19 @@ ramtron_attach(void)
 		}
 	}
 
+#if defined(CONFIG_ARCH_BOARD_F4BY)
+	if (mtd_dev != NULL)
+	{
+		int ret = mtd_dev->ioctl(mtd_dev, MTDIOC_SETSPEED, (unsigned long)10*1000*1000);
+        if (ret != OK)
+            warnx(1, "failed to set bus speed");
+		attached = true;
+	}
+	else
+	{
+		warnx(1, "failed to initialize fram driver");
+	}
+#else
 	/* if last attempt is still unsuccessful, abort */
 	if (mtd_dev == NULL)
 		errx(1, "failed to initialize mtd driver");
@@ -195,8 +209,10 @@ ramtron_attach(void)
             warnx(1, "failed to set bus speed");
 
 	attached = true;
+#endif	
 }
-#elif defined(CONFIG_ARCH_BOARD_F4BY)
+#endif
+#if defined(CONFIG_ARCH_BOARD_F4BY)
 static void
 m25px_attach(void)
 {
@@ -236,6 +252,7 @@ m25px_attach(void)
             warnx(1, "failed to set bus speed");
 
 	attached = true;
+	is_m25_attached = true;
 }
 #else
 static void
@@ -278,13 +295,15 @@ mtd_start(char *partition_names[], unsigned n_partitions)
 		errx(1, "mtd already mounted");
 
 	if (!attached) {
-		#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V1)
 		at24xxx_attach();
-		#elif defined(CONFIG_ARCH_BOARD_F4BY)
-		m25px_attach();
-		#else
+#elif defined(CONFIG_ARCH_BOARD_F4BY)
 		ramtron_attach();
-		#endif
+		if(!attached)
+			m25px_attach();
+#else
+		ramtron_attach();
+#endif
 	}
 
 	if (!mtd_dev) {
@@ -294,7 +313,7 @@ mtd_start(char *partition_names[], unsigned n_partitions)
 
 
 		/* Initialize to provide an FTL block driver on the MTD FLASH interface */
-#if defined(CONFIG_ARCH_BOARD_F4BY)
+if(is_m25_attached){
 	ret = smart_initialize(1, mtd_dev, NULL);
 	if (ret < 0)
     {
@@ -302,10 +321,6 @@ mtd_start(char *partition_names[], unsigned n_partitions)
 //      msgflush();
       exit(2);
     }
-
-  /* Creaet a SMARTFS filesystem */
-
-  //ret = mksmartfs("/dev/smart1");
 
   /* Mount the file system */
 
@@ -324,7 +339,7 @@ mtd_start(char *partition_names[], unsigned n_partitions)
 //      msgflush();
       exit(3);
     }
-#else	
+}else{	
 	unsigned long blocksize, erasesize, neraseblocks;
 	unsigned blkpererase, nblocks, partsize;
 
@@ -369,7 +384,7 @@ mtd_start(char *partition_names[], unsigned n_partitions)
 	}
 
 	n_partitions_current = n_partitions;		
-#endif		
+}		
 
 	started = true;
 	exit(0);
