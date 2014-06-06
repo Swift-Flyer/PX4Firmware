@@ -199,6 +199,8 @@ __EXPORT int nsh_archinitialize(void)
 	drv_led_start();
 	led_off(LED_AMBER);
 	led_off(LED_BLUE);
+	led_off(LED_GREEN);
+	led_off(LED_YELLOW);
 
 
 	/* Configure SPI-based devices */
