@@ -42,6 +42,7 @@
 #include <nuttx/arch.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 #include <drivers/drv_device.h>
 
 namespace device
@@ -94,7 +95,9 @@ Device::Device(const char *name,
 	_irq_attached(false)
 {
 	sem_init(&_lock, 0, 1);
-        
+	
+	memset(&_device_id, 0, sizeof(_device_id));
+	
 	/* setup a default device ID. When bus_type is UNKNOWN the
 	   other fields are invalid */
 	_device_id.devid_s.bus_type = DeviceBusType_UNKNOWN;
