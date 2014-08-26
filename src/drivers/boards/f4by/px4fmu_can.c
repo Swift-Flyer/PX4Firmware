@@ -105,8 +105,7 @@
  *   examples/can.
  *
  ************************************************************************************/
-
-int can_devinit(void)
+__EXPORT int can_devinit(void)
 {
 	static bool initialized = false;
 	struct can_dev_s *can;
