@@ -334,8 +334,8 @@ void F4BY_INPUT::controls_init()
 {
 	/**
 	1-2 DSM
-	2-3 PPMSUM
-	3-4 SBUS
+	2-3 SBUS
+	3-4 PPMSUM
 	PIN3 - USART6_RX
 	*/
 	
@@ -375,8 +375,35 @@ void F4BY_INPUT::controls_init()
 		return;
 	}
 	
-	unregister_driver("/dev/ttyS4");
+	
 	stm32_configgpio(IN3_OUTPUT);
+	
+	for(i = 0;i<32;i++)
+	{  
+		if ((test>>(i&0x07))&0x01) 
+		{
+			stm32_gpiowrite(IN3_OUTPUT,1);
+			while (!stm32_gpioread(IN3_OUTPUT));
+			if (!stm32_gpioread(IN2_INPUT)) sbus++;
+			
+		} 
+		else 
+		{
+			stm32_gpiowrite(IN3_OUTPUT,0);
+			while (stm32_gpioread(IN3_OUTPUT));
+			if (stm32_gpioread(IN2_INPUT)) sbus++;
+		}
+	}
+	
+	if(!sbus)
+	{
+		log("S.BUS input");
+		_inputType = eSBUS;
+		sbus_init("/dev/ttyS4");
+		return;
+	}
+	
+	unregister_driver("/dev/ttyS4");
 	stm32_configgpio(IN4_INPUT);
 	
 	for(i = 0;i<32;i++)
@@ -385,16 +412,13 @@ void F4BY_INPUT::controls_init()
 		{
 			stm32_gpiowrite(IN3_OUTPUT,1);
 			while (!stm32_gpioread(IN3_OUTPUT));
-			if (!stm32_gpioread(IN2_INPUT)) sppm++;
-			if (!stm32_gpioread(IN4_INPUT)) sbus++;
-			
+			if (!stm32_gpioread(IN4_INPUT)) sppm++;
 		} 
 		else 
 		{
 			stm32_gpiowrite(IN3_OUTPUT,0);
 			while (stm32_gpioread(IN3_OUTPUT));
-			if (stm32_gpioread(IN2_INPUT)) sppm++;
-			if (stm32_gpioread(IN4_INPUT)) sbus++;
+			if (stm32_gpioread(IN4_INPUT)) sppm++;
 		}
 	}
 	
@@ -404,13 +428,7 @@ void F4BY_INPUT::controls_init()
 		_inputType = ePPMSUM;
 		rc_init(true);
 		return;
-	}else if(!sbus)
-	{
-		log("S.BUS input");
-		_inputType = eSBUS;
-		sbus_init("/dev/ttyS3");
-		return;
-	}else
+	}else 
 	{
 		log("PPM input");
 		rc_init(false);
