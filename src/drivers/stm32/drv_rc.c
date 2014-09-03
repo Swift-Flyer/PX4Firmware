@@ -42,14 +42,14 @@
 #define rDCR     	REG(STM32_GTIM_DCR_OFFSET)
 #define rDMAR    	REG(STM32_GTIM_DMAR_OFFSET)
 
-# define rCCR_HRT	rCCR2			/* compare register for HRT */
-# define DIER_HRT	GTIM_DIER_CC2IE		/* interrupt enable for HRT */
-# define SR_INT_HRT	GTIM_SR_CC2IF		/* interrupt status for HRT */
+# define rCCR_HRT	rCCR4			/* compare register for HRT */
+# define DIER_HRT	GTIM_DIER_CC4IE		/* interrupt enable for HRT */
+# define SR_INT_HRT	GTIM_SR_CC4IF		/* interrupt status for HRT */
 
-#  define rCCR_PPM	rCCR2			/* capture register for PPM */
-#  define DIER_PPM	GTIM_DIER_CC2IE		/* capture interrupt (non-DMA mode) */
-#  define SR_INT_PPM	GTIM_SR_CC2IF		/* capture interrupt (non-DMA mode) */
-#  define SR_OVF_PPM	GTIM_SR_CC2OF		/* capture overflow (non-DMA mode) */
+#  define rCCR_PPM	rCCR4			/* capture register for PPM */
+#  define DIER_PPM	GTIM_DIER_CC4IE		/* capture interrupt (non-DMA mode) */
+#  define SR_INT_PPM	GTIM_SR_CC4IF		/* capture interrupt (non-DMA mode) */
+#  define SR_OVF_PPM	GTIM_SR_CC4OF		/* capture overflow (non-DMA mode) */
 #  define CCMR1_PPM	0			/* not on TI1/TI2 */
 #  define CCMR2_PPM	0x100			/* on TI3, not on TI4 */
 #  define CCER_PPM	(GTIM_CCER_CC4E | GTIM_CCER_CC4P | GTIM_CCER_CC4NP) /* CC2, both edges */
