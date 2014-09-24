@@ -2128,6 +2128,11 @@ PX4IO::ioctl(file * filep, int cmd, unsigned long arg)
 		ret = io_reg_set(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_FORCE_SAFETY_OFF, PX4IO_FORCE_SAFETY_MAGIC);
 		break;
 
+    case PWM_SERVO_SET_FORCE_SAFETY_ON:
+        /* force safety switch on */
+        ret = io_reg_set(PX4IO_PAGE_SETUP, PX4IO_P_SETUP_FORCE_SAFETY_ON, PX4IO_FORCE_SAFETY_MAGIC);
+        break;
+
 	case DSM_BIND_START:
 
 		/* only allow DSM2, DSM-X and DSM-X with more than 7 channels */

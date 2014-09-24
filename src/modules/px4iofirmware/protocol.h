@@ -211,6 +211,7 @@ enum {							/* DSM bind states */
 
 #define PX4IO_P_SETUP_FORCE_SAFETY_OFF	       12	/* force safety switch into
                                                            'armed' (PWM enabled) state */
+#define PX4IO_P_SETUP_FORCE_SAFETY_ON          13   /* force safety switch into 'disarmed' (PWM disabled state) */
 #define PX4IO_FORCE_SAFETY_MAGIC            22027       /* required argument for force safety (random) */
 
 /* autopilot control values, -10000..10000 */
