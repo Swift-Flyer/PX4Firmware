@@ -265,8 +265,6 @@ ppm_input(uint16_t *values, uint16_t *num_values)
 
 void F4BY_INPUT::controls_tick()
 {
-	uint16_t rssi;
-
 	struct rc_input_values rc_in;
 
 	memset(&rc_in, 0, sizeof(rc_in));
@@ -292,7 +290,7 @@ void F4BY_INPUT::controls_tick()
 		if (updated) {
 
 			/* XXX sample RSSI properly here */
-			rssi = 255;
+			//rssi = 255;
 		}
 		//perf_end(c_gather_ppm);
 	}

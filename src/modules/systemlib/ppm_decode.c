@@ -92,6 +92,8 @@ uint16_t	ppm_buffer[PPM_MAX_CHANNELS];
 unsigned	ppm_decoded_channels;
 hrt_abstime	ppm_last_valid_decode;
 
+uint16_t	rssi;
+
 static uint16_t ppm_temp_buffer[PPM_MAX_CHANNELS];
 
 /* PPM decoder state machine */
@@ -176,7 +178,10 @@ ppm_input_decode(bool reset, unsigned count)
 			/* frame channel count matches expected, let's use it */
 			if (ppm.next_channel > PPM_MIN_CHANNELS) {
 				for (i = 0; i < ppm.next_channel; i++)
-					ppm_buffer[i] = ppm_temp_buffer[i];
+				{
+					if(i != 7 && i != 6)
+						ppm_buffer[i] = ppm_temp_buffer[i];
+				}	
 
 				ppm_last_valid_decode = hrt_absolute_time();
 			}

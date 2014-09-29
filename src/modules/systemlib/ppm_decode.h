@@ -61,6 +61,9 @@ __EXPORT extern uint16_t	ppm_frame_length;				/**< length of the decoded PPM fra
 __EXPORT extern unsigned	ppm_decoded_channels;	/**< count of decoded channels */
 __EXPORT extern hrt_abstime	ppm_last_valid_decode;	/**< timestamp of the last valid decode */
 
+
+__EXPORT extern uint16_t	rssi;				/**< length of the decoded PPM frame (includes gap) */
+
 /**
  * Initialise the PPM input decoder.
  *

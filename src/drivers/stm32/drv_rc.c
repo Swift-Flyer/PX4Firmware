@@ -9,6 +9,7 @@
 #include "stm32.h"
 #include "stm32_gpio.h"
 #include "stm32_tim.h"
+#include <stdio.h>
 
 #define PPM_MIN_CHANNEL_VALUE	800		/* shortest valid channel signal */
 #define PPM_MAX_CHANNEL_VALUE	2200		/* longest valid channel signal */
@@ -140,11 +141,11 @@ void rc_init(bool startPPMSUM)
 		rCR1 = 0;
 		rCR2 = 0;
 		rSMCR = 0;
-		rDIER = DIER_HRT | DIER_PPM;
+		rDIER = DIER_HRT | DIER_PPM | GTIM_DIER_CC3IE;
 		rCCER = 0;		/* unlock CCMR* registers */
 		rCCMR1 = CCMR1_PPM;
-		rCCMR2 = CCMR2_PPM;
-		rCCER = CCER_PPM;
+		rCCMR2 = CCMR2_PPM | 0x101;
+		rCCER = CCER_PPM  | GTIM_CCER_CC3E /*| GTIM_CCER_CC3P | GTIM_CCER_CC3NP*/;
 		rDCR = 0;
 
 		/* configure the timer to free-run at 1MHz */
@@ -155,6 +156,7 @@ void rc_init(bool startPPMSUM)
 
 		/* set an initial capture a little ways off */
 		rCCR_HRT = 1000;
+		rCCR3 = 1000;
 
 		/* generate an update event; reloads the counter, all registers */
 		rEGR = GTIM_EGR_UG;
@@ -167,6 +169,7 @@ void rc_init(bool startPPMSUM)
 	
 		ppm_input_init(0xffff);
 		stm32_configgpio(GPIO_PPMSUM_IN);
+		stm32_configgpio(GPIO_PPM_CH2_IN);
 	}
 	else
 	{
@@ -267,6 +270,9 @@ void rc_init(bool startPPMSUM)
 
 static uint16_t ppm_temp_buffer[PPM_MAX_CHANNELS];
 
+uint16_t upTime = 0;
+uint16_t riseTime = 0;
+
 static int
 rc_tim_isr(int irq, void *context)
 {
@@ -343,6 +349,29 @@ rc_tim_isr(int irq, void *context)
 			/* if required, flip edge sensitivity */
 			ppm_input_decode(status & SR_OVF_PPM, rCCR_PPM);
 		}
+		if ( status & ( GTIM_SR_CC3IF) ) {
+			if(status & GTIM_SR_CC3IF)
+			{
+				uint16_t current = rCCR3;
+				if(TIM3_rCCER & GTIM_CCER_CC3P) // fail
+				{
+					TIM3_rCCER &= ~GTIM_CCER_CC3P;
+					//upTime = calcWidth(rCCR3, current);
+					upTime = calcWidth(current, riseTime);
+					ppm_buffer[6] = upTime;
+				}
+				else //rais
+				{
+					
+					TIM3_rCCER |= GTIM_CCER_CC3P;
+					uint16_t fullTime = calcWidth(current, riseTime);
+					rssi = ((long)upTime<<8)/fullTime;
+					ppm_buffer[7] = fullTime;
+					riseTime = current;
+				}
+			}
+		}
+		
 	}
 	return OK;
 }
