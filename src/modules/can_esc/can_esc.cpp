@@ -57,6 +57,11 @@
 extern "C" { __EXPORT int can_esc_main(int argc, char *argv[]); }
 extern "C" { __EXPORT int can_devinit(void); }
 
+//struct hrt_call		_call;
+//unsigned		_call_interval;
+//hrt_call_every(&_call, 1000, _call_interval, (hrt_callout)&BMA180::measure_trampoline, this);
+//hrt_call_after();
+
 static int
 start(void)
 {
@@ -77,16 +82,29 @@ start(void)
     nbytes = write(fd, &txmsg, msgsize);    
 	
 	msgsize = sizeof(struct can_msg_s);
-    nbytes = read(fd, &rxmsg, msgsize);
-    if (nbytes < CAN_MSGLEN(0) || nbytes > msgsize)
-      {
-        printf("ERROR: read(%d) returned %d\n", msgsize, nbytes);
-       }
-       else
-       {
-       	 printf("OK: read(%d) returned %d %d %d\n", msgsize, nbytes, rxmsg.cm_data[0], rxmsg.cm_data[1]);
-       }
-	
+    
+    while(1)
+    {
+    	struct pollfd fds;
+		fds.fd = fd;
+		fds.events = POLLIN;
+		if (poll(&fds, 1, 1000) > 0) {
+		
+			nbytes = read(fd, &rxmsg, msgsize);
+			if (nbytes < CAN_MSGLEN(0) || nbytes > msgsize)
+			{
+				printf("ERROR: read(%d) returned %d\n", msgsize, nbytes);
+			}
+			else
+			{
+				printf("OK: read(%d) returned %d %d %d\n", msgsize, nbytes, rxmsg.cm_data[0], rxmsg.cm_data[1]);
+			}
+	   }
+	   else
+	   {
+	   	//printf("timeout\n");
+	   }
+	}
 	return 0;
 }
 
