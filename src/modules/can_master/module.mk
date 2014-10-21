@@ -35,6 +35,22 @@
 # Main Navigation Controller
 #
 
-MODULE_COMMAND	= can_esc
+MODULE_COMMAND	= can_master
 
-SRCS		= can_esc.cpp
+CANFESTIVAL_DIR = $(PX4_ROOT)/CanFestival
+
+SRCS		= can_master.cpp \
+				od.c \
+				callbacks.c \
+				$(CANFESTIVAL_DIR)/src/nmtMaster.c \
+				$(CANFESTIVAL_DIR)/src/emcy.c \
+				$(CANFESTIVAL_DIR)/src/sync.c \
+				$(CANFESTIVAL_DIR)/src/lifegrd.c \
+				$(CANFESTIVAL_DIR)/src/states.c \
+				$(CANFESTIVAL_DIR)/src/nmtSlave.c \
+				$(CANFESTIVAL_DIR)/src/objacces.c \
+				$(CANFESTIVAL_DIR)/src/sdo.c \
+				$(CANFESTIVAL_DIR)/src/pdo.c \
+				$(CANFESTIVAL_DIR)/src/timer.c
+				
+INCLUDE_DIRS	 += $(PX4_ROOT)/src/modules/can_master $(CANFESTIVAL_DIR)/include
