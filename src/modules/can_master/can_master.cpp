@@ -84,52 +84,46 @@ void CanTimeDispatch(void *arg)
 
 void setTimer(TIMEVAL value)
 {
-	printf("ST %d\n", value);
 	fflush(stdout);
 	hrt_cancel(&call_);
 	hrt_call_after(&call_, value, &CanTimeDispatch, 0);
-	printf("ST END\n");
 }
-
-int fd = 0;
 
 int task_receiver(int argc, char *argv[])
 {
 	struct can_msg_s rxmsg;
-	int fd2 = open("/dev/can0", O_RDWR);
+	
 	while(1)
     {
-    	//struct pollfd fds;
-		//fds.fd = fd;
-		//fds.events = POLLIN;
-		//if (poll(&fds, 1, 1000) > 0) 
+		int fd2 = open("/dev/can0", O_RDWR);
+		printf("r %d\n", fd2);
+		size_t msgsize = CAN_MSGLEN(8);;
+		ssize_t nbytes;
+		nbytes = read(fd2, &rxmsg, msgsize);
+		if (nbytes > 0)
 		{
-			
-			size_t msgsize = CAN_MSGLEN(8);;
-  			ssize_t nbytes;
-			nbytes = read(fd2, &rxmsg, msgsize);
-			if (nbytes > 0)
-			{
-				Message m;
-				m.cob_id = rxmsg.cm_hdr.ch_id;
-				m.rtr = rxmsg.cm_hdr.ch_rtr;
-				m.len = rxmsg.cm_hdr.ch_dlc;
-				m.data[0] = rxmsg.cm_data[0];
-				m.data[1] = rxmsg.cm_data[1];
-				m.data[2] = rxmsg.cm_data[2];
-				m.data[3] = rxmsg.cm_data[3];
-				m.data[4] = rxmsg.cm_data[4];
-				m.data[5] = rxmsg.cm_data[5];
-				m.data[6] = rxmsg.cm_data[6];
-				m.data[7] = rxmsg.cm_data[7];
-				canDispatch(&esc_Data, &m);
-				printf("OK: read(%d) returned %d %d %d %d\n", msgsize, nbytes, rxmsg.cm_data[0], rxmsg.cm_data[1]);
-			}
-			
-			usleep(100*1000);
-	   }
+			Message m;
+			m.cob_id = rxmsg.cm_hdr.ch_id;
+			m.rtr = rxmsg.cm_hdr.ch_rtr;
+			m.len = rxmsg.cm_hdr.ch_dlc;
+			m.data[0] = rxmsg.cm_data[0];
+			m.data[1] = rxmsg.cm_data[1];
+			m.data[2] = rxmsg.cm_data[2];
+			m.data[3] = rxmsg.cm_data[3];
+			m.data[4] = rxmsg.cm_data[4];
+			m.data[5] = rxmsg.cm_data[5];
+			m.data[6] = rxmsg.cm_data[6];
+			m.data[7] = rxmsg.cm_data[7];
+			canDispatch(&esc_Data, &m);
+			printf("%d r\n", int(hrt_absolute_time()/1000), msgsize, m.cob_id & 0x7F, rxmsg.cm_data[0], rxmsg.cm_data[1], rxmsg.cm_data[2] );
+			close(fd2);
+		}
+		else
+		{
+			//usleep(1000);
+		}
 	}
-	close(fd2);
+	
 	return 0;
 }
 
@@ -138,12 +132,11 @@ int fd1 = 0;
 extern "C" {
 	unsigned char canSend(CAN_PORT notused, Message *m)
 	{
-		printf("CS\n");
+		//printf("CS\n");
 		if(!fd1)
 		{
-			printf("BO\n");
 			fd1 = open("/dev/can0", O_RDWR);
-			printf("AO\n");
+			printf("w %d\n", fd1);
 		}
 		struct can_msg_s txmsg;
 		txmsg.cm_hdr.ch_id    = m->cob_id;
@@ -162,16 +155,16 @@ extern "C" {
 		ssize_t nbytes;
 		if(fd1)
 		{
-			printf("BW\n");
+			//printf("BW\n");
     		nbytes = write(fd1, &txmsg, msgsize);  
-    		printf("AW\n");
+    		//printf("AW\n");
 			if(msgsize == nbytes)
 				printf("CSD OK, %d %d\n", msgsize, nbytes);
 			else
 				printf("CSD F, %d %d %d\n", msgsize, nbytes, errno);
-			printf("BC\n");
+//			printf("BC\n");
 			close(fd1);
-			printf("AC\n");
+//			printf("AC\n");
 			fd1 = 0;
     	}
     	else
@@ -184,28 +177,24 @@ extern "C" {
 
 int task_main_trampoline(int argc, char *argv[])
 {
-	printf("InTask\n");
-	fflush(stdout);
 	while(1)
 	{
 		sem_wait(&sem);
 		TimeDispatch();
-        printf("timer\n");
-		fflush(stdout);
 	}
 	return 0;
 }
 
-void InitNode()
+void InitNode(int a)
 {
-	UNS8 nodeID = 0x12;
+	UNS8 nodeID = a;
 	setNodeId (&esc_Data, nodeID);
 	InitCallbacks(&esc_Data);
 	setState(&esc_Data, Initialisation);	// Init the state
 }
 
 static int
-start(void)
+start(int a)
 {
 	sem_init(&sem, 0, 0);
 	hrt_call_init(&call_);
@@ -222,7 +211,7 @@ start(void)
     task_create("task", 100, 2048, task_main_trampoline, 0);
     //hrt_call_every(&task_, 0, 1000000, &task, 0);
     
-    InitNode();
+    InitNode(a);
     setState(&esc_Data, Operational);
     
     
@@ -258,8 +247,8 @@ can_master_main(int argc, char *argv[])
 
 		/*if (g_fd >= 0)
 			errx(1, "already running");*/
-
-		start();
+		int a = atoi(argv[2]);
+		start(a);
 
 		/*if (g_fd < 0)
 			errx(1, "start failed");*/
