@@ -58,6 +58,12 @@
 #include "od.h"
 #include "callbacks.h"
 #include <drivers/drv_hrt.h>
+#include "stm32_can.h"
+#include "up_internal.h"
+#include "up_arch.h"
+
+#include "chip.h"
+#include "stm32.h"
 
 extern "C" { __EXPORT int can_master_main(int argc, char *argv[]); }
 extern "C" { __EXPORT int can_devinit(void); }
@@ -72,6 +78,9 @@ TIMEVAL getElapsedTime(void)
 	return 0;
 }
 
+#define TRANSMIT 1
+#define RECEIVE 1
+
 hrt_call call_;
 hrt_call task_;
 
@@ -84,19 +93,20 @@ void CanTimeDispatch(void *arg)
 
 void setTimer(TIMEVAL value)
 {
-	fflush(stdout);
 	hrt_cancel(&call_);
 	hrt_call_after(&call_, value, &CanTimeDispatch, 0);
 }
 
+
+
 int task_receiver(int argc, char *argv[])
 {
 	struct can_msg_s rxmsg;
-	
+	int fd2 = open("/dev/can0", O_RDWR);
 	while(1)
     {
-		int fd2 = open("/dev/can0", O_RDWR);
-		printf("r %d\n", fd2);
+#if RECEIVE
+		
 		size_t msgsize = CAN_MSGLEN(8);;
 		ssize_t nbytes;
 		nbytes = read(fd2, &rxmsg, msgsize);
@@ -116,28 +126,37 @@ int task_receiver(int argc, char *argv[])
 			m.data[7] = rxmsg.cm_data[7];
 			canDispatch(&esc_Data, &m);
 			printf("%d r\n", int(hrt_absolute_time()/1000), msgsize, m.cob_id & 0x7F, rxmsg.cm_data[0], rxmsg.cm_data[1], rxmsg.cm_data[2] );
-			close(fd2);
+			
 		}
 		else
 		{
 			//usleep(1000);
 		}
+#endif		
 	}
-	
+	close(fd2);
 	return 0;
 }
 
 int fd1 = 0;
 
+int task_main_trampoline(int argc, char *argv[])
+{
+	fd1 = open("/dev/can0", O_RDWR);
+	while(1)
+	{
+		sem_wait(&sem);
+#if TRANSMIT		
+		TimeDispatch();
+#endif		
+	}
+	close(fd1);
+	return 0;
+}
+
 extern "C" {
 	unsigned char canSend(CAN_PORT notused, Message *m)
 	{
-		//printf("CS\n");
-		if(!fd1)
-		{
-			fd1 = open("/dev/can0", O_RDWR);
-			printf("w %d\n", fd1);
-		}
 		struct can_msg_s txmsg;
 		txmsg.cm_hdr.ch_id    = m->cob_id;
 		txmsg.cm_hdr.ch_rtr   = m->rtr;
@@ -159,13 +178,14 @@ extern "C" {
     		nbytes = write(fd1, &txmsg, msgsize);  
     		//printf("AW\n");
 			if(msgsize == nbytes)
-				printf("CSD OK, %d %d\n", msgsize, nbytes);
+			{
+				printf("CSD OK, %d %d 0x%08x\n", msgsize, nbytes, getreg32(STM32_CAN1_ESR));
+				fflush(stdout);
+			}
 			else
+			{
 				printf("CSD F, %d %d %d\n", msgsize, nbytes, errno);
-//			printf("BC\n");
-			close(fd1);
-//			printf("AC\n");
-			fd1 = 0;
+			}
     	}
     	else
     	{
@@ -173,16 +193,6 @@ extern "C" {
     	}
 		return msgsize == nbytes;
 	}
-}
-
-int task_main_trampoline(int argc, char *argv[])
-{
-	while(1)
-	{
-		sem_wait(&sem);
-		TimeDispatch();
-	}
-	return 0;
 }
 
 void InitNode(int a)

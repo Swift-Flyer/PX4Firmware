@@ -106,7 +106,7 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                     UNS32 esc_obj1016[]={0};
 
 /* index 0x1017 :   Producer Heartbeat Time. */
-                    UNS16 esc_obj1017 = 5000;	/* 0 */
+                    UNS16 esc_obj1017 = 500;	/* 0 */
                     ODCallback_t esc_Index1017_callbacks[] = 
                      {
                        NULL,
