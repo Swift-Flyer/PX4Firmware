@@ -9,9 +9,13 @@
 #include "canfestival.h"
 #include "od.h"
 #include "callbacks.h"
+#include <stdio.h>
+
 
 UNS32 speedChanged(CO_Data* d, const indextable *test , UNS8 bSubindex)
 {
+	printf("sc\n");
+	fflush(stdout);
 	return 0;
 }
 
@@ -47,9 +51,15 @@ void InitCallbacks(CO_Data* d)
 	UNS32 errorCode;
     ODCallback_t *CallbackList = 0;
     
-    esc_scanIndexOD (0x2000, &errorCode, &CallbackList);
-	if(errorCode == OD_SUCCESSFUL && CallbackList)
-	{
-		CallbackList[0] = speedChanged;
+    for(UNS16 index = 0x2001; index <= 0x2004; ++index)
+    {
+		F4BY_scanIndexOD (index, &errorCode, &CallbackList);
+		if(errorCode == OD_SUCCESSFUL && CallbackList)
+		{
+			for(int i = 1; i <= 8; ++i)
+			{
+				CallbackList[i] = speedChanged;
+			}
+		}
 	}
 }

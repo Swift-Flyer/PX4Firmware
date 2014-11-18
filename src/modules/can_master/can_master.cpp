@@ -124,7 +124,7 @@ int task_receiver(int argc, char *argv[])
 			m.data[5] = rxmsg.cm_data[5];
 			m.data[6] = rxmsg.cm_data[6];
 			m.data[7] = rxmsg.cm_data[7];
-			canDispatch(&esc_Data, &m);
+			canDispatch(&F4BY_Data, &m);
 			printf("%d r\n", int(hrt_absolute_time()/1000), msgsize, m.cob_id & 0x7F, rxmsg.cm_data[0], rxmsg.cm_data[1], rxmsg.cm_data[2] );
 			
 		}
@@ -198,9 +198,9 @@ extern "C" {
 void InitNode(int a)
 {
 	UNS8 nodeID = a;
-	setNodeId (&esc_Data, nodeID);
-	InitCallbacks(&esc_Data);
-	setState(&esc_Data, Initialisation);	// Init the state
+	setNodeId (&F4BY_Data, nodeID);
+	InitCallbacks(&F4BY_Data);
+	setState(&F4BY_Data, Initialisation);	// Init the state
 }
 
 static int
@@ -222,7 +222,7 @@ start(int a)
     //hrt_call_every(&task_, 0, 1000000, &task, 0);
     
     InitNode(a);
-    setState(&esc_Data, Operational);
+    setState(&F4BY_Data, Operational);
     
     
 	return 0;
@@ -257,8 +257,7 @@ can_master_main(int argc, char *argv[])
 
 		/*if (g_fd >= 0)
 			errx(1, "already running");*/
-		int a = atoi(argv[2]);
-		start(a);
+		start(0x7F);
 
 		/*if (g_fd < 0)
 			errx(1, "start failed");*/
