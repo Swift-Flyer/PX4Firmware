@@ -54,7 +54,7 @@ CROSSDEV_VER_SUPPORTED	 = 4.7
 CROSSDEV_VER_FOUND	 = $(shell $(CC) -dumpversion)
 
 ifeq (,$(findstring $(CROSSDEV_VER_SUPPORTED),$(CROSSDEV_VER_FOUND)))
-$(error Unsupported version of $(CC), found: $(CROSSDEV_VER_FOUND) instead of $(CROSSDEV_VER_SUPPORTED).x)
+#$(error Unsupported version of $(CC), found: $(CROSSDEV_VER_FOUND) instead of $(CROSSDEV_VER_SUPPORTED).x)
 endif
 
 
