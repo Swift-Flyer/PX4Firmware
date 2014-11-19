@@ -281,7 +281,7 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 /* index 0x1404 :   Receive PDO 5 Parameter. */
                     UNS8 F4BY_highestSubIndex_obj1404 = 6; /* number of subindex - 1*/
-                    UNS32 F4BY_obj1404_COB_ID_used_by_PDO = 0x0;	/* 0 */
+                    UNS32 F4BY_obj1404_COB_ID_used_by_PDO = 0x191;	/* 401 */
                     UNS8 F4BY_obj1404_Transmission_Type = 0x0;	/* 0 */
                     UNS16 F4BY_obj1404_Inhibit_Time = 0x0;	/* 0 */
                     UNS8 F4BY_obj1404_Compatibility_Entry = 0x0;	/* 0 */
@@ -300,7 +300,7 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 /* index 0x1405 :   Receive PDO 6 Parameter. */
                     UNS8 F4BY_highestSubIndex_obj1405 = 6; /* number of subindex - 1*/
-                    UNS32 F4BY_obj1405_COB_ID_used_by_PDO = 0x0;	/* 0 */
+                    UNS32 F4BY_obj1405_COB_ID_used_by_PDO = 0x192;	/* 402 */
                     UNS8 F4BY_obj1405_Transmission_Type = 0x0;	/* 0 */
                     UNS16 F4BY_obj1405_Inhibit_Time = 0x0;	/* 0 */
                     UNS8 F4BY_obj1405_Compatibility_Entry = 0x0;	/* 0 */
@@ -319,7 +319,7 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 /* index 0x1406 :   Receive PDO 7 Parameter. */
                     UNS8 F4BY_highestSubIndex_obj1406 = 6; /* number of subindex - 1*/
-                    UNS32 F4BY_obj1406_COB_ID_used_by_PDO = 0x0;	/* 0 */
+                    UNS32 F4BY_obj1406_COB_ID_used_by_PDO = 0x193;	/* 403 */
                     UNS8 F4BY_obj1406_Transmission_Type = 0x0;	/* 0 */
                     UNS16 F4BY_obj1406_Inhibit_Time = 0x0;	/* 0 */
                     UNS8 F4BY_obj1406_Compatibility_Entry = 0x0;	/* 0 */
@@ -338,7 +338,7 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 /* index 0x1407 :   Receive PDO 8 Parameter. */
                     UNS8 F4BY_highestSubIndex_obj1407 = 6; /* number of subindex - 1*/
-                    UNS32 F4BY_obj1407_COB_ID_used_by_PDO = 0x0;	/* 0 */
+                    UNS32 F4BY_obj1407_COB_ID_used_by_PDO = 0x194;	/* 404 */
                     UNS8 F4BY_obj1407_Transmission_Type = 0x0;	/* 0 */
                     UNS16 F4BY_obj1407_Inhibit_Time = 0x0;	/* 0 */
                     UNS8 F4BY_obj1407_Compatibility_Entry = 0x0;	/* 0 */
@@ -357,7 +357,7 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 /* index 0x1408 :   Receive PDO 9 Parameter. */
                     UNS8 F4BY_highestSubIndex_obj1408 = 6; /* number of subindex - 1*/
-                    UNS32 F4BY_obj1408_COB_ID_used_by_PDO = 0x0;	/* 0 */
+                    UNS32 F4BY_obj1408_COB_ID_used_by_PDO = 0x195;	/* 405 */
                     UNS8 F4BY_obj1408_Transmission_Type = 0x0;	/* 0 */
                     UNS16 F4BY_obj1408_Inhibit_Time = 0x0;	/* 0 */
                     UNS8 F4BY_obj1408_Compatibility_Entry = 0x0;	/* 0 */
@@ -376,7 +376,7 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 /* index 0x1409 :   Receive PDO 10 Parameter. */
                     UNS8 F4BY_highestSubIndex_obj1409 = 6; /* number of subindex - 1*/
-                    UNS32 F4BY_obj1409_COB_ID_used_by_PDO = 0x0;	/* 0 */
+                    UNS32 F4BY_obj1409_COB_ID_used_by_PDO = 0x196;	/* 406 */
                     UNS8 F4BY_obj1409_Transmission_Type = 0x0;	/* 0 */
                     UNS16 F4BY_obj1409_Inhibit_Time = 0x0;	/* 0 */
                     UNS8 F4BY_obj1409_Compatibility_Entry = 0x0;	/* 0 */
@@ -395,7 +395,7 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 /* index 0x140A :   Receive PDO 11 Parameter. */
                     UNS8 F4BY_highestSubIndex_obj140A = 6; /* number of subindex - 1*/
-                    UNS32 F4BY_obj140A_COB_ID_used_by_PDO = 0x0;	/* 0 */
+                    UNS32 F4BY_obj140A_COB_ID_used_by_PDO = 0x197;	/* 407 */
                     UNS8 F4BY_obj140A_Transmission_Type = 0x0;	/* 0 */
                     UNS16 F4BY_obj140A_Inhibit_Time = 0x0;	/* 0 */
                     UNS8 F4BY_obj140A_Compatibility_Entry = 0x0;	/* 0 */
@@ -414,7 +414,7 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 /* index 0x140B :   Receive PDO 12 Parameter. */
                     UNS8 F4BY_highestSubIndex_obj140B = 6; /* number of subindex - 1*/
-                    UNS32 F4BY_obj140B_COB_ID_used_by_PDO = 0x0;	/* 0 */
+                    UNS32 F4BY_obj140B_COB_ID_used_by_PDO = 0x198;	/* 408 */
                     UNS8 F4BY_obj140B_Transmission_Type = 0x0;	/* 0 */
                     UNS16 F4BY_obj140B_Inhibit_Time = 0x0;	/* 0 */
                     UNS8 F4BY_obj140B_Compatibility_Entry = 0x0;	/* 0 */

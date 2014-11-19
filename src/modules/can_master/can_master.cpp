@@ -78,7 +78,7 @@ TIMEVAL getElapsedTime(void)
 	return 0;
 }
 
-#define TRANSMIT 1
+#define TRANSMIT 0
 #define RECEIVE 1
 
 hrt_call call_;
@@ -125,7 +125,7 @@ int task_receiver(int argc, char *argv[])
 			m.data[6] = rxmsg.cm_data[6];
 			m.data[7] = rxmsg.cm_data[7];
 			canDispatch(&F4BY_Data, &m);
-			printf("%d r\n", int(hrt_absolute_time()/1000), msgsize, m.cob_id & 0x7F, rxmsg.cm_data[0], rxmsg.cm_data[1], rxmsg.cm_data[2] );
+			printf("R: %d %x %d %d %d %d\n", int(hrt_absolute_time()/1000), m.cob_id, rxmsg.cm_data[1]<< 8 | rxmsg.cm_data[0], rxmsg.cm_data[3]<< 8 | rxmsg.cm_data[2], rxmsg.cm_data[4], rxmsg.cm_data[6] << 8 | rxmsg.cm_data[5]);
 			
 		}
 		else
@@ -244,7 +244,7 @@ stop(void)
 static void
 usage(void)
 {
-	errx(1, "usage: can_esc {start|stop|status}");
+	errx(1, "usage: can_master {start|stop|status}");
 }
 
 int
