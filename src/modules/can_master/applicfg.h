@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 #include "config.h"
 
 #ifndef NULL
@@ -90,6 +91,9 @@ typedef void* CAN_PORT;
 #else
 #    define MSG_WAR(num, str, val)
 #endif
+
+#define MSG(...) \
+do{printf(__VA_ARGS__);fflush(stdout);}while(0)
 
 #endif
 

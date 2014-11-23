@@ -721,7 +721,7 @@ F4BYFMU::ioctl(file *filp, int cmd, unsigned long arg)
 	case MODE_2PWM:
 	case MODE_4PWM:
 	case MODE_6PWM:
-    	case MODE_8PWM:
+    case MODE_8PWM:
 		ret = pwm_ioctl(filp, cmd, arg);
 		break;
 

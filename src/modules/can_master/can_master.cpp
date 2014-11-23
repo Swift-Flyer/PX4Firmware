@@ -37,7 +37,13 @@
  * DATAMANAGER driver.
  */
 
+#define NEED_PRINT_MESSAGE
+#include <can_driver.h>
+
+
 #include <nuttx/config.h>
+#include <drivers/device/device.h>
+#include <drivers/drv_canopennode.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -61,31 +67,71 @@
 #include "stm32_can.h"
 #include "up_internal.h"
 #include "up_arch.h"
-
 #include "chip.h"
 #include "stm32.h"
+
+
+class CanOpenNode : public device::CDev
+{
+public:
+	CanOpenNode();
+	~CanOpenNode();
+
+	int init();
+
+	static int start();
+	static int stop();
+	static int task_main_trampoline(int argc, char *argv[]);
+
+	void initNode(UNS8 nodeID);
+
+	void run();
+	void receiveLoop();
+
+	int	ioctl(struct file *filp, int cmd, unsigned long arg);
+	ssize_t	write(struct file *filp, const char *buffer, size_t buflen);
+
+private:
+	volatile bool _task_should_exit;
+	int		_task;
+	int 	_can_dev_fd;
+};
+
+namespace
+{
+	CanOpenNode* g_Node = nullptr;
+	hrt_call g_TimerCall;
+}
+
+CanOpenNode::CanOpenNode() :
+	CDev("canopennode", CANOPEN_NODE_PATH),
+	_task_should_exit(false),
+	_task(-1),
+	_can_dev_fd(-1)
+{
+
+}
+
+CanOpenNode::~CanOpenNode()
+{
+}
 
 extern "C" { __EXPORT int can_master_main(int argc, char *argv[]); }
 extern "C" { __EXPORT int can_devinit(void); }
 
-//struct hrt_call		_call;
-//unsigned		_call_interval;
-//hrt_call_every(&_call, 1000, _call_interval, (hrt_callout)&BMA180::measure_trampoline, this);
-//hrt_call_after();
 
 TIMEVAL getElapsedTime(void)
 {
 	return 0;
 }
 
-#define TRANSMIT 0
+#define TRANSMIT 1
 #define RECEIVE 1
 
-hrt_call call_;
-hrt_call task_;
+
 
 sem_t sem;
-
+void CanTimeDispatch(void *arg);
 void CanTimeDispatch(void *arg)
 {
 	sem_post(&sem);
@@ -93,23 +139,62 @@ void CanTimeDispatch(void *arg)
 
 void setTimer(TIMEVAL value)
 {
-	hrt_cancel(&call_);
-	hrt_call_after(&call_, value, &CanTimeDispatch, 0);
+	hrt_cancel(&g_TimerCall);
+	hrt_call_after(&g_TimerCall, value, &CanTimeDispatch, 0);
 }
 
+sem_t sendSem;
+struct can_msg_s txmsg;
+void* senderThread(void* arg);
+void* senderThread(void* arg)
+{
+	int fd = *((int*)arg);
+	sem_init(&sendSem, 0, 0);
+	while(1)
+	{
+		sem_wait(&sendSem);
+		ssize_t msgsize = CAN_MSGLEN(txmsg.cm_hdr.ch_dlc);
+		ssize_t nbytes = msgsize;
+		if(fd)
+		{
+			nbytes = write(fd, &txmsg, msgsize);
+			if(msgsize == nbytes)
+			{
+				printf("CSD OK, %d %d 0x%08x\n", msgsize, nbytes, getreg32(STM32_CAN1_ESR));
+				fflush(stdout);
+			}
+			else
+			{
+				printf("CSD F, %d %d %d\n", msgsize, nbytes, errno);
+				fflush(stdout);
+			}
 
+		}
+		else
+		{
+			//printf("no fd\n");
+		}
+	}
+	return 0;
+}
 
-int task_receiver(int argc, char *argv[])
+void InitNode(UNS8 nodeID);
+
+void* receiverThread(void* arg)
+{
+	CanOpenNode* canNode = reinterpret_cast<CanOpenNode*>(arg);
+	if(canNode)
+		canNode->receiveLoop();
+}
+
+void CanOpenNode::receiveLoop()
 {
 	struct can_msg_s rxmsg;
-	int fd2 = open("/dev/can0", O_RDWR);
-	while(1)
-    {
-#if RECEIVE
-		
+	while(!_task_should_exit)
+	{
 		size_t msgsize = CAN_MSGLEN(8);;
 		ssize_t nbytes;
-		nbytes = read(fd2, &rxmsg, msgsize);
+		nbytes = ::read(_can_dev_fd, &rxmsg, msgsize);
 		if (nbytes > 0)
 		{
 			Message m;
@@ -124,40 +209,41 @@ int task_receiver(int argc, char *argv[])
 			m.data[5] = rxmsg.cm_data[5];
 			m.data[6] = rxmsg.cm_data[6];
 			m.data[7] = rxmsg.cm_data[7];
+			print_message(&m);
 			canDispatch(&F4BY_Data, &m);
-			printf("R: %d %x %d %d %d %d\n", int(hrt_absolute_time()/1000), m.cob_id, rxmsg.cm_data[1]<< 8 | rxmsg.cm_data[0], rxmsg.cm_data[3]<< 8 | rxmsg.cm_data[2], rxmsg.cm_data[4], rxmsg.cm_data[6] << 8 | rxmsg.cm_data[5]);
-			
 		}
-		else
-		{
-			//usleep(1000);
-		}
-#endif		
 	}
-	close(fd2);
-	return 0;
 }
 
-int fd1 = 0;
-
-int task_main_trampoline(int argc, char *argv[])
+void CanOpenNode::run()
 {
-	fd1 = open("/dev/can0", O_RDWR);
-	while(1)
+	_can_dev_fd = ::open("/dev/can0", O_RDWR);
+	pthread_t sender_thread_id;
+	pthread_t receiver_thread_id;
+	pthread_create(&sender_thread_id, 0, senderThread, &_can_dev_fd);
+	pthread_create(&receiver_thread_id, 0, receiverThread, this);
+
+	initNode(0x01);
+
+	while(!_task_should_exit)
 	{
 		sem_wait(&sem);
-#if TRANSMIT		
+#if TRANSMIT
 		TimeDispatch();
-#endif		
+#endif
 	}
-	close(fd1);
+	::close(_can_dev_fd);
+}
+
+int CanOpenNode::task_main_trampoline(int argc, char *argv[])
+{
+	g_Node->run();
 	return 0;
 }
 
 extern "C" {
 	unsigned char canSend(CAN_PORT notused, Message *m)
 	{
-		struct can_msg_s txmsg;
 		txmsg.cm_hdr.ch_id    = m->cob_id;
 		txmsg.cm_hdr.ch_rtr   = m->rtr;
 		txmsg.cm_hdr.ch_dlc   = m->len;
@@ -169,82 +255,123 @@ extern "C" {
 		txmsg.cm_data[5] = m->data[5];
 		txmsg.cm_data[6] = m->data[6];
 		txmsg.cm_data[7] = m->data[7];
-
-		size_t msgsize = CAN_MSGLEN(txmsg.cm_hdr.ch_dlc);
-		ssize_t nbytes;
-		if(fd1)
-		{
-			//printf("BW\n");
-    		nbytes = write(fd1, &txmsg, msgsize);  
-    		//printf("AW\n");
-			if(msgsize == nbytes)
-			{
-				printf("CSD OK, %d %d 0x%08x\n", msgsize, nbytes, getreg32(STM32_CAN1_ESR));
-				fflush(stdout);
-			}
-			else
-			{
-				printf("CSD F, %d %d %d\n", msgsize, nbytes, errno);
-			}
-    	}
-    	else
-    	{
-    		printf("no fd\n");
-    	}
-		return msgsize == nbytes;
+		sem_post(&sendSem);
+		return 0;
 	}
 }
 
-void InitNode(int a)
+
+void CanOpenNode::initNode(UNS8 nodeID)
 {
-	UNS8 nodeID = a;
 	setNodeId (&F4BY_Data, nodeID);
 	InitCallbacks(&F4BY_Data);
 	setState(&F4BY_Data, Initialisation);	// Init the state
 }
 
-static int
-start(int a)
-{
-	sem_init(&sem, 0, 0);
-	hrt_call_init(&call_);
-	can_devinit();
-	//fd = open("/dev/can0", O_RDWR);
-	//size_t msgsize;
-  	//ssize_t nbytes;
-	//msgsize = CAN_MSGLEN(2);
-    //nbytes = write(fd, &txmsg, msgsize);    
-	
-	//msgsize = sizeof(struct can_msg_s);
-    
-    task_create("task_receiver", 100, 2048, task_receiver, 0);
-    task_create("task", 100, 2048, task_main_trampoline, 0);
-    //hrt_call_every(&task_, 0, 1000000, &task, 0);
-    
-    InitNode(a);
-    setState(&F4BY_Data, Operational);
-    
-    
-	return 0;
-}
-
-static void
-status(void)
+static void status(void)
 {
 	/* display usage statistics */
 }
 
-static void
-stop(void)
-{
-	/* Tell the worker task to shut down */
-	
-}
-
-static void
-usage(void)
+static void usage(void)
 {
 	errx(1, "usage: can_master {start|stop|status}");
+}
+
+inline int CanOpenNode::start()
+{
+	int ret = OK;
+	if (g_Node == nullptr) {
+		g_Node = new CanOpenNode();
+
+		if (g_Node == nullptr) {
+			ret = -ENOMEM;
+		} else {
+			ret = g_Node->init();
+
+			if (ret != OK) {
+				delete g_Node;
+				g_Node = nullptr;
+			}
+		}
+	}
+	return ret;
+}
+
+int CanOpenNode::stop()
+{
+	int ret = OK;
+	if (g_Node != nullptr) {
+		delete g_Node;
+		g_Node = nullptr;
+	}
+	return ret;
+}
+
+int CanOpenNode::init()
+{
+	int ret = can_devinit();
+
+	if(ret == OK){
+		ret = CDev::init();
+		if(ret == OK){
+			sem_init(&sem, 0, 0);
+			hrt_call_init(&g_TimerCall);
+
+			_task = task_spawn_cmd("canopennode",
+							   SCHED_DEFAULT,
+							   SCHED_PRIORITY_DEFAULT,
+							   2048,
+							   (main_t)&CanOpenNode::task_main_trampoline,
+							   nullptr);
+
+			if (_task < 0) {
+				debug("task start failed: %d", errno);
+				return -errno;
+			}
+		}
+	}
+
+	return ret;
+}
+
+void test()
+{
+	g_Node->write(0, 0, 0);
+}
+
+int	CanOpenNode::ioctl(struct file *filp, int cmd, unsigned long arg)
+{
+	int ret = -ENOTTY;
+	switch(cmd)
+	{
+	case CANOPEN_ARM:
+		printf("Oper\n");
+		setState(&F4BY_Data, Operational);
+		ret = OK;
+		break;
+	case CANOPEN_ARM_ESC:
+		masterSendNMTstateChange(&F4BY_Data, 0, arg ? Operational : Pre_operational);
+		break;
+	default:
+		break;
+	}
+	if(ret == -ENOTTY)
+	{
+		ret = CDev::ioctl(filp, cmd, arg);
+	}
+	return ret;
+}
+
+ssize_t	CanOpenNode::write(struct file *filp, const char *buffer, size_t buflen)
+{
+	const uint16_t* data = (const uint16_t*)buffer;
+	for(int i = 0; i < 4; ++i)
+	{
+		speed[i] = (data[i] << 5) | i;
+	}
+	sendOnePDOevent(&F4BY_Data, 0);
+	return buflen;
 }
 
 int
@@ -254,28 +381,21 @@ can_master_main(int argc, char *argv[])
 		usage();
 
 	if (!strcmp(argv[1], "start")) {
-
-		/*if (g_fd >= 0)
-			errx(1, "already running");*/
-		start(0x7F);
-
-		/*if (g_fd < 0)
-			errx(1, "start failed");*/
-
-		exit(0);
+		if (CanOpenNode::start() != OK)
+			errx(1, "failed to start the FMU driver");
+		else
+			exit(0);
 	}
-
-	/* Worker thread should be running for all other commands */
-	/*if (g_fd < 0)
-		errx(1, "not running");*/
-
-	if (!strcmp(argv[1], "stop"))
-		stop();
+	else if (!strcmp(argv[1], "stop"))
+		CanOpenNode::stop();
 	else if (!strcmp(argv[1], "status"))
 		status();
+	else if (!strcmp(argv[1], "test"))
+		test();
 	else
 		usage();
 
 	exit(1);
 }
+
 

@@ -32,6 +32,7 @@ void GoToStoppedState(CO_Data* d)
 void GoToPreOperationalState(CO_Data* d)
 {
 	printf("PreOpState\n");
+	_preOperational(d);
 }
 
 void GoToInitialisationState(CO_Data* d)
