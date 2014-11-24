@@ -172,7 +172,7 @@ void* senderThread(void* arg)
 		}
 		else
 		{
-			//printf("no fd\n");
+			printf("no fd\n");
 		}
 	}
 	return 0;
@@ -255,7 +255,17 @@ extern "C" {
 		txmsg.cm_data[5] = m->data[5];
 		txmsg.cm_data[6] = m->data[6];
 		txmsg.cm_data[7] = m->data[7];
-		sem_post(&sendSem);
+		print_message(m);
+		//sem_post(&sendSem);
+		int fddd = ::open("/dev/can0", O_RDWR);
+		ssize_t msgsize = CAN_MSGLEN(txmsg.cm_hdr.ch_dlc);
+		ssize_t nbytes = msgsize;
+		if(fddd)
+		{
+			nbytes = write(fddd, &txmsg, msgsize);
+			printf("WriteTO\n");
+		}
+		close(fddd);
 		return 0;
 	}
 }
@@ -368,7 +378,7 @@ ssize_t	CanOpenNode::write(struct file *filp, const char *buffer, size_t buflen)
 	const uint16_t* data = (const uint16_t*)buffer;
 	for(int i = 0; i < 4; ++i)
 	{
-		speed[i] = (data[i] << 5) | i;
+		speed[i] = (data[i] << 5) | (i+1);
 	}
 	sendOnePDOevent(&F4BY_Data, 0);
 	return buflen;
