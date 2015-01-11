@@ -165,7 +165,7 @@ $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                     UNS32 F4BY_obj1016[]={0};
 
 /* index 0x1017 :   Producer Heartbeat Time. */
-                    UNS16 F4BY_obj1017 = 0; //0x3E8;	/* 0 */
+                    UNS16 F4BY_obj1017 = 0x3E8;	/* 0 */
                     ODCallback_t F4BY_Index1017_callbacks[] = 
                      {
                        NULL,

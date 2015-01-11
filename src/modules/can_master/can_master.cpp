@@ -69,6 +69,7 @@
 #include "up_arch.h"
 #include "chip.h"
 #include "stm32.h"
+#include <unistd.h>
 
 
 class CanOpenNode : public device::CDev
@@ -160,19 +161,19 @@ void* senderThread(void* arg)
 			nbytes = write(fd, &txmsg, msgsize);
 			if(msgsize == nbytes)
 			{
-				printf("CSD OK, %d %d 0x%08x\n", msgsize, nbytes, getreg32(STM32_CAN1_ESR));
+				//printf("CSD OK, %d %d 0x%08x\n", msgsize, nbytes, getreg32(STM32_CAN1_ESR));
 				fflush(stdout);
 			}
 			else
 			{
-				printf("CSD F, %d %d %d\n", msgsize, nbytes, errno);
+				//printf("CSD F, %d %d %d\n", msgsize, nbytes, errno);
 				fflush(stdout);
 			}
 
 		}
 		else
 		{
-			printf("no fd\n");
+			//printf("no fd\n");
 		}
 	}
 	return 0;
@@ -195,6 +196,8 @@ void CanOpenNode::receiveLoop()
 		size_t msgsize = CAN_MSGLEN(8);;
 		ssize_t nbytes;
 		nbytes = ::read(_can_dev_fd, &rxmsg, msgsize);
+		//printf("R%d\n", getpid());
+		//fflush(stdout);
 		if (nbytes > 0)
 		{
 			Message m;
@@ -209,7 +212,7 @@ void CanOpenNode::receiveLoop()
 			m.data[5] = rxmsg.cm_data[5];
 			m.data[6] = rxmsg.cm_data[6];
 			m.data[7] = rxmsg.cm_data[7];
-			print_message(&m);
+			//print_message(&m);
 			canDispatch(&F4BY_Data, &m);
 		}
 	}
@@ -255,17 +258,19 @@ extern "C" {
 		txmsg.cm_data[5] = m->data[5];
 		txmsg.cm_data[6] = m->data[6];
 		txmsg.cm_data[7] = m->data[7];
-		print_message(m);
-		//sem_post(&sendSem);
-		int fddd = ::open("/dev/can0", O_RDWR);
-		ssize_t msgsize = CAN_MSGLEN(txmsg.cm_hdr.ch_dlc);
-		ssize_t nbytes = msgsize;
-		if(fddd)
-		{
-			nbytes = write(fddd, &txmsg, msgsize);
-			printf("WriteTO\n");
-		}
-		close(fddd);
+		//print_message(m);
+		printf("Cs%d\n", getpid());
+		fflush(stdout);
+		sem_post(&sendSem);
+		//int fddd = ::open("/dev/can0", O_RDWR);
+		//ssize_t msgsize = CAN_MSGLEN(txmsg.cm_hdr.ch_dlc);
+		//ssize_t nbytes = msgsize;
+		//if(fddd)
+		//{
+		//	nbytes = write(fddd, &txmsg, msgsize);
+		//	printf("WriteTO\n");
+		//}
+		//close(fddd);
 		return 0;
 	}
 }
@@ -276,6 +281,7 @@ void CanOpenNode::initNode(UNS8 nodeID)
 	setNodeId (&F4BY_Data, nodeID);
 	InitCallbacks(&F4BY_Data);
 	setState(&F4BY_Data, Initialisation);	// Init the state
+	setState(&F4BY_Data, Operational);
 }
 
 static void status(void)
@@ -356,12 +362,15 @@ int	CanOpenNode::ioctl(struct file *filp, int cmd, unsigned long arg)
 	switch(cmd)
 	{
 	case CANOPEN_ARM:
-		printf("Oper\n");
-		setState(&F4BY_Data, Operational);
+		//printf("Oper\n");
+		//setState(&F4BY_Data, Operational);
 		ret = OK;
 		break;
 	case CANOPEN_ARM_ESC:
+	{
 		masterSendNMTstateChange(&F4BY_Data, 0, arg ? Operational : Pre_operational);
+		ret = OK;
+	}
 		break;
 	default:
 		break;
@@ -380,7 +389,9 @@ ssize_t	CanOpenNode::write(struct file *filp, const char *buffer, size_t buflen)
 	{
 		speed[i] = (data[i] << 5) | (i+1);
 	}
+	//printf("Ws%d\n", getpid());
 	sendOnePDOevent(&F4BY_Data, 0);
+
 	return buflen;
 }
 

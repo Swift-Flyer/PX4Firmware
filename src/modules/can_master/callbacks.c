@@ -16,6 +16,7 @@ UNS32 speedChanged(CO_Data* d, const indextable *test , UNS8 bSubindex)
 {
 	printf("sc\n");
 	fflush(stdout);
+
 	return 0;
 }
 
@@ -29,10 +30,29 @@ void GoToStoppedState(CO_Data* d)
 	printf("StopState\n");
 }
 
+void CheckSDOAndContinue(CO_Data* d, UNS8 nodeId)
+{
+	printf("CaC\n");
+}
+
+
+
 void GoToPreOperationalState(CO_Data* d)
 {
 	printf("PreOpState\n");
-	_preOperational(d);
+	UNS16 Heartbeat_Producer_Time = 5000;
+	writeNetworkDictCallBackAI (d, /*CO_Data* d*/
+			/**TestSlave_Data.bDeviceNodeId, UNS8 nodeId*/
+			0x11, /*UNS8 nodeId*/
+			0x1017, /*UNS16 index*/
+			0x00, /*UNS8 subindex*/
+			2, /*UNS8 count*/
+			0, /*UNS8 dataType*/
+			&Heartbeat_Producer_Time,/*void *data*/
+			CheckSDOAndContinue, /*SDOCallback_t Callback*/
+			0,
+			0); /* use block mode */
+	//_preOperational(d);
 }
 
 void GoToInitialisationState(CO_Data* d)
