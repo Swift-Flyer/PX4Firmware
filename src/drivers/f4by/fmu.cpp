@@ -1270,27 +1270,11 @@ F4BYFMU::gpio_reset(void)
 			stm32_configgpio(_gpio_tab[i].output);
 		}
 	}
-
-	/* if we have a GPIO direction control, set it to zero (input) */
-	stm32_gpiowrite(GPIO_GPIO_DIR, 0);
-	stm32_configgpio(GPIO_GPIO_DIR);
 }
 
 void
 F4BYFMU::gpio_set_function(uint32_t gpios, int function)
 {
-	/*
-	 * GPIOs 0 and 1 must have the same direction as they are buffered
-	 * by a shared 2-port driver.  Any attempt to set either sets both.
-	 */
-	if (gpios & 3) {
-		gpios |= 3;
-
-		/* flip the buffer to output mode if required */
-		if (GPIO_SET_OUTPUT == function)
-			stm32_gpiowrite(GPIO_GPIO_DIR, 1);
-	}
-
 	/* configure selected GPIOs as required */
 	for (unsigned i = 0; i < _ngpio; i++) {
 		if (gpios & (1 << i)) {
@@ -1311,10 +1295,6 @@ F4BYFMU::gpio_set_function(uint32_t gpios, int function)
 			}
 		}
 	}
-
-	/* flip buffer to input mode if required */
-	if ((GPIO_SET_INPUT == function) && (gpios & 3))
-		stm32_gpiowrite(GPIO_GPIO_DIR, 0);
 }
 
 void
