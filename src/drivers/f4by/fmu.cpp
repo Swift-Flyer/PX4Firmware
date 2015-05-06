@@ -1376,46 +1376,46 @@ fmu_new_mode(PortMode new_mode)
 	g_fmu->ioctl(0, GPIO_RESET, 0);
 
 	gpio_bits = 0;
-	servo_mode = F4BYFMU::MODE_NONE;
+	servo_mode = F4BYFMU::MODE_8PWM;
 
-	switch (new_mode) {
-	case PORT_FULL_GPIO:
-	case PORT_MODE_UNSET:
-		/* nothing more to do here */
-		break;
-
-	case PORT_FULL_PWM:
-		/* select 8-pin PWM mode */
-		servo_mode = F4BYFMU::MODE_8PWM;//F4BY
-		break;
-
-	case PORT_FULL_SERIAL:
-	  servo_mode = F4BYFMU::MODE_8PWM;
-		/* set all multi-GPIOs to serial mode */
-		gpio_bits = GPIO_MULTI_1 | GPIO_MULTI_2 | GPIO_MULTI_3 | GPIO_MULTI_4;
-		break;
-
-	case PORT_GPIO_AND_SERIAL:
-	  servo_mode = F4BYFMU::MODE_8PWM;
-		/* set RX/TX multi-GPIOs to serial mode */
-		gpio_bits = GPIO_MULTI_3 | GPIO_MULTI_4;
-		break;
-
-	case PORT_PWM_AND_SERIAL:
-		/* select 2-pin PWM mode */
-		servo_mode = F4BYFMU::MODE_8PWM;
-		/* set RX/TX multi-GPIOs to serial mode */
-		gpio_bits = GPIO_MULTI_3 | GPIO_MULTI_4;
-		break;
-
-	case PORT_PWM_AND_GPIO:
-		/* select 2-pin PWM mode */
-		servo_mode = F4BYFMU::MODE_8PWM;
-		break;
-
-	default:
-		return -1;
-	}
+//	switch (new_mode) {
+//	case PORT_FULL_GPIO:
+//	case PORT_MODE_UNSET:
+//		/* nothing more to do here */
+//		break;
+//
+//	case PORT_FULL_PWM:
+//		/* select 8-pin PWM mode */
+//		servo_mode = F4BYFMU::MODE_8PWM;//F4BY
+//		break;
+//
+//	case PORT_FULL_SERIAL:
+//	  servo_mode = F4BYFMU::MODE_8PWM;
+//		/* set all multi-GPIOs to serial mode */
+//		gpio_bits = GPIO_MULTI_1 | GPIO_MULTI_2 | GPIO_MULTI_3 | GPIO_MULTI_4;
+//		break;
+//
+//	case PORT_GPIO_AND_SERIAL:
+//	  servo_mode = F4BYFMU::MODE_8PWM;
+//		/* set RX/TX multi-GPIOs to serial mode */
+//		gpio_bits = GPIO_MULTI_3 | GPIO_MULTI_4;
+//		break;
+//
+//	case PORT_PWM_AND_SERIAL:
+//		/* select 2-pin PWM mode */
+//		servo_mode = F4BYFMU::MODE_8PWM;
+//		/* set RX/TX multi-GPIOs to serial mode */
+//		gpio_bits = GPIO_MULTI_3 | GPIO_MULTI_4;
+//		break;
+//
+//	case PORT_PWM_AND_GPIO:
+//		/* select 2-pin PWM mode */
+//		servo_mode = F4BYFMU::MODE_8PWM;
+//		break;
+//
+//	default:
+//		return -1;
+//	}
 
 	/* adjust GPIO config for serial mode(s) */
 	if (gpio_bits != 0)
