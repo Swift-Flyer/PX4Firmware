@@ -52,10 +52,10 @@
 
 __EXPORT const struct pwm_servo_timer pwm_timers[PWM_SERVO_MAX_TIMERS] = {
 	{
-		.base = STM32_TIM2_BASE,
-		.clock_register = STM32_RCC_APB1ENR,
-		.clock_bit = RCC_APB1ENR_TIM2EN,
-		.clock_freq = STM32_APB1_TIM2_CLKIN
+		.base = STM32_TIM1_BASE,
+		.clock_register = STM32_RCC_APB2ENR,
+		.clock_bit = RCC_APB2ENR_TIM1EN,
+		.clock_freq = STM32_APB2_TIM1_CLKIN
 	},
 	{//F4BY
 		.base = STM32_TIM1_BASE,
