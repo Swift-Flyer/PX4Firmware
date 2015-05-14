@@ -52,66 +52,78 @@
 
 __EXPORT const struct pwm_servo_timer pwm_timers[PWM_SERVO_MAX_TIMERS] = {
 	{
-		.base = STM32_TIM1_BASE,
+		.base = STM32_TIM12_BASE,
+		.clock_register = STM32_RCC_APB1ENR,
+		.clock_bit = RCC_APB1ENR_TIM12EN,
+		.clock_freq = STM32_APB1_TIM12_CLKIN
+	},
+	{//F4BY
+		.base = STM32_TIM8_BASE,
 		.clock_register = STM32_RCC_APB2ENR,
-		.clock_bit = RCC_APB2ENR_TIM1EN,
+		.clock_bit = RCC_APB2ENR_TIM8EN,
 		.clock_freq = STM32_APB2_TIM1_CLKIN
 	},
 	{//F4BY
-		.base = STM32_TIM1_BASE,
-		.clock_register = STM32_RCC_APB2ENR,
-		.clock_bit = RCC_APB2ENR_TIM1EN,
-		.clock_freq = STM32_APB2_TIM1_CLKIN
-	}
+        .base = STM32_TIM3_BASE,
+        .clock_register = STM32_RCC_APB1ENR,
+        .clock_bit = RCC_APB1ENR_TIM3EN,
+        .clock_freq = STM32_APB1_TIM3_CLKIN
+    },
+    {//F4BY
+        .base = STM32_TIM1_BASE,
+        .clock_register = STM32_RCC_APB2ENR,
+        .clock_bit = RCC_APB2ENR_TIM1EN,
+        .clock_freq = STM32_APB2_TIM1_CLKIN
+    }
 };
 
 __EXPORT const struct pwm_servo_channel pwm_channels[PWM_SERVO_MAX_CHANNELS] = {
 	{
-		.gpio = GPIO_TIM2_CH1OUT,
+		.gpio = PWM1,
 		.timer_index = 0,
 		.timer_channel = 1,
-		.default_value = 0,
+		.default_value = 1000,
 	},
 	{
-		.gpio = GPIO_TIM2_CH2OUT,
+		.gpio = PWM2,
 		.timer_index = 0,
 		.timer_channel = 2,
-		.default_value = 0,
+		.default_value = 1000,
 	},
 	{
-		.gpio = GPIO_TIM2_CH3OUT,
-		.timer_index = 0,
-		.timer_channel = 3,
-		.default_value = 0,
+		.gpio = PWM3,
+		.timer_index = 1,
+		.timer_channel = 1,
+		.default_value = 1000,
 	},
 	{
-		.gpio = GPIO_TIM2_CH4OUT,
-		.timer_index = 0,
-		.timer_channel = 4,
-		.default_value = 0,
+		.gpio = PWM4,
+		.timer_index = 1,
+		.timer_channel = 2,
+		.default_value = 1000,
 	},
 {//F4BY
-		.gpio = GPIO_TIM1_CH1OUT,
-		.timer_index = 1,
-		.timer_channel = 1,
-		.default_value = 0,
-	},
-	{
-		.gpio = GPIO_TIM1_CH2OUT,
-		.timer_index = 1,
-		.timer_channel = 2,
-		.default_value = 0,
-	},
-	{
-		.gpio = GPIO_TIM1_CH3OUT,
-		.timer_index = 1,
+		.gpio = PWM5,
+		.timer_index = 2,
 		.timer_channel = 3,
-		.default_value = 0,
+		.default_value = 1000,
 	},
 	{
-		.gpio = GPIO_TIM1_CH4OUT,
-		.timer_index = 1,
+		.gpio = PWM6,
+		.timer_index = 2,
 		.timer_channel = 4,
-		.default_value = 0,
+		.default_value = 1000,
+	},
+	{
+		.gpio = PWM7,
+		.timer_index = 3,
+		.timer_channel = 1,
+		.default_value = 1000,
+	},
+	{
+		.gpio = PWM8,
+		.timer_index = 3,
+		.timer_channel = 3,
+		.default_value = 1000,
 	}
 };

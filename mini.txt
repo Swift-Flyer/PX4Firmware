@@ -1,0 +1,60 @@
+// @Values: -1:Disabled
+
+13:APM2 A9 pin
+47:APM1 relay
+
+50:Pixhawk FMU AUX1
+51:Pixhawk FMU AUX2
+52:Pixhawk FMU AUX3
+53:Pixhawk FMU AUX4
+54:Pixhawk FMU AUX5
+55:Pixhawk FMU AUX6
+
+111:PX4 FMU Relay1
+112:PX4 FMU Relay2
+113:PX4IO Relay1
+114:PX4IO Relay2
+115:PX4IO ACC1
+116:PX4IO ACC2
+
+70:F4BY D1,71:F4BY D2
+
+
+
+
+PB14 35 tim12_ch1 motor1
+PB15 36 tim12_ch2 motor2
+PC6  36 tim08_ch1 motor3
+PC7  37 tim08_ch2 motor4
+PC8  38 tim03_ch3 motor5
+PC9  39 tim03_ch4 motor6
+PA8  41 tim01_ch1 motor7
+PA10 43 tim01_ch3 motor8
+
+Сергей Липницкий (14 May 2015, 22:48)
+это же не 103
+вход PA3
+17
+usart 2
+s.bus
+DSM
+PPM-summ/tim5
+
+Сергей Липницкий (14 May 2015, 22:49)
+по моему 3-й канал тайсера
+
+
+Сергей Липницкий (14 May 2015, 23:07)
+а слабо в 3-м усарте ноги подправить и консоль смотреть?
+PB10
+29
+usart3_tx
+Flexi/GPS2
+nsh
+i2c2
+PB11
+30
+usart3_rx
+Flexi/GPS2
+nsh
+i2c2
