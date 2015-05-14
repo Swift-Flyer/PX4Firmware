@@ -217,8 +217,8 @@ __EXPORT int nsh_archinitialize(void)
 	SPI_SETFREQUENCY(spi1, 10000000);
 	SPI_SETBITS(spi1, 8);
 	SPI_SETMODE(spi1, SPIDEV_MODE3);
-	SPI_SELECT(spi1, PX4_SPIDEV_GYRO, false);
-	SPI_SELECT(spi1, PX4_SPIDEV_ACCEL, false);
+	SPI_SELECT(spi1, PX4_SPIDEV_BARO, false);
+//	SPI_SELECT(spi1, PX4_SPIDEV_ACCEL, false);
 	SPI_SELECT(spi1, PX4_SPIDEV_MPU, false);
 	up_udelay(20);
 
@@ -229,14 +229,14 @@ __EXPORT int nsh_archinitialize(void)
 	 * Keep the SPI2 init optional and conditionally initialize the ADC pins
 	 */
 
-        #ifdef CONFIG_STM32_SPI2 //f4by
-                spi2 = up_spiinitialize(2);
+        #ifdef CONFIG_STM32_SPI3 //f4by
+                spi3 = up_spiinitialize(3);
                 ///* Default SPI2 to 1MHz and de-assert the known chip selects. */
-                SPI_SETFREQUENCY(spi2, 10000000);
-                SPI_SETBITS(spi2, 8);
-                SPI_SETMODE(spi2, SPIDEV_MODE3);
-                SPI_SELECT(spi2, SPIDEV_FLASH, false);
-				SPI_SELECT(spi2, SPIDEV_MMCSD, false);
+                SPI_SETFREQUENCY(spi3, 10000000);
+                SPI_SETBITS(spi3, 8);
+                SPI_SETMODE(spi3, SPIDEV_MODE3);
+                SPI_SELECT(spi3, SPIDEV_FLASH, false);
+				SPI_SELECT(spi3, SPIDEV_MMCSD, false);
 
                 message("[boot] Initialized SPI port2\n");
         #else
@@ -249,7 +249,7 @@ __EXPORT int nsh_archinitialize(void)
   
 
         /* Now bind the SPI interface to the MMCSD driver */
-        result = mmcsd_spislotinitialize(CONFIG_NSH_MMCSDMINOR, CONFIG_NSH_MMCSDSLOTNO, spi2);
+        result = mmcsd_spislotinitialize(CONFIG_NSH_MMCSDMINOR, CONFIG_NSH_MMCSDSLOTNO, spi3);
 
         if (result != OK) {
                 message("[boot] FAILED to bind SPI port 2 to the MMCSD driver\n");
@@ -258,7 +258,7 @@ __EXPORT int nsh_archinitialize(void)
         }
 
         message("[boot] Successfully bound SPI port 2 to the MMCSD driver\n");
-
+#if 0
 message("[boot] Initializing SPI port 3\n");
         spi3 = up_spiinitialize(3);
 		///* Default SPI3 to 1MHz and de-assert the known chip selects. */
@@ -266,7 +266,7 @@ message("[boot] Initializing SPI port 3\n");
                 SPI_SETBITS(spi3, 8);
                 SPI_SETMODE(spi3, SPIDEV_MODE3);
                 SPI_SELECT(spi3, PX4_SPIDEV_GYRO, false);
-                SPI_SELECT(spi3, PX4_SPIDEV_ACCEL_MAG, false);
+//                SPI_SELECT(spi3, PX4_SPIDEV_ACCEL_MAG, false);
         if (!spi3) {
                 message("[boot] FAILED to initialize SPI port 3\n");
                 up_ledon(LED_AMBER);
@@ -274,5 +274,6 @@ message("[boot] Initializing SPI port 3\n");
         }
 
         message("[boot] Successfully initialized SPI port 3\n");
+#endif
         return OK;//f4by spi2 spi3
 }
