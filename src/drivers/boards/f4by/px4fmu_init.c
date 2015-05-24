@@ -165,6 +165,7 @@ __EXPORT int nsh_archinitialize(void)
 	int result;
 
 	/* configure always-on ADC pins */
+	stm32_configgpio(GPIO_ADC1_IN2);
 	stm32_configgpio(GPIO_ADC1_IN10);
 	stm32_configgpio(GPIO_ADC1_IN11);
 	stm32_configgpio(GPIO_ADC1_IN12);
@@ -199,8 +200,8 @@ __EXPORT int nsh_archinitialize(void)
 	drv_led_start();
 	led_off(LED_AMBER);
 	led_off(LED_BLUE);
-	led_off(LED_GREEN);
-	led_off(LED_YELLOW);
+	//led_off(LED_GREEN);
+	//led_off(LED_YELLOW);
 
 
 	/* Configure SPI-based devices */
@@ -238,13 +239,8 @@ __EXPORT int nsh_archinitialize(void)
                 SPI_SELECT(spi3, SPIDEV_FLASH, false);
 				SPI_SELECT(spi3, SPIDEV_MMCSD, false);
 
-                message("[boot] Initialized SPI port2\n");
-        #else
-                spi2 = NULL;
-                message("[boot] Enabling IN12/13 instead of SPI2\n");
-                /* no SPI2, use pins for ADC */
-                stm32_configgpio(GPIO_ADC1_IN12);
-                stm32_configgpio(GPIO_ADC1_IN13);        // jumperable to MPU6000 DRDY on some boards
+                message("[boot] Initialized SPI port3\n");
+        
         #endif
   
 
@@ -252,12 +248,12 @@ __EXPORT int nsh_archinitialize(void)
         result = mmcsd_spislotinitialize(CONFIG_NSH_MMCSDMINOR, CONFIG_NSH_MMCSDSLOTNO, spi3);
 
         if (result != OK) {
-                message("[boot] FAILED to bind SPI port 2 to the MMCSD driver\n");
+                message("[boot] FAILED to bind SPI port 3 to the MMCSD driver\n");
                 up_ledon(LED_AMBER);
                 return -ENODEV;
         }
 
-        message("[boot] Successfully bound SPI port 2 to the MMCSD driver\n");
+        message("[boot] Successfully bound SPI port 3 to the MMCSD driver\n");
 #if 0
 message("[boot] Initializing SPI port 3\n");
         spi3 = up_spiinitialize(3);
