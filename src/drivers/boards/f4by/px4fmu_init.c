@@ -169,6 +169,8 @@ __EXPORT int nsh_archinitialize(void)
 	stm32_configgpio(GPIO_ADC1_IN11);
 	stm32_configgpio(GPIO_ADC1_IN12);
 	stm32_configgpio(GPIO_ADC1_IN13);
+	stm32_configgpio(GPIO_ADC1_IN14);
+	stm32_configgpio(GPIO_ADC1_IN15);
 	/* IN12 and IN13 further below */
 
 	/* configure the high-resolution time/callout interface */
