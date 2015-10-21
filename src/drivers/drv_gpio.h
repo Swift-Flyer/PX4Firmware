@@ -51,21 +51,21 @@
  */
 # define GPIO_EXT_1		(1<<0)		/**< high-power GPIO 1 */
 # define GPIO_EXT_2		(1<<1)		/**< high-power GPIO 1 */
-# define GPIO_MULTI_1		(1<<2)		/**< USART2 CTS */
-# define GPIO_MULTI_2		(1<<3)		/**< USART2 RTS */
-# define GPIO_MULTI_3		(1<<4)		/**< USART2 TX */
-# define GPIO_MULTI_4		(1<<5)		/**< USART2 RX */
-# define GPIO_CAN_TX		(1<<6)		/**< CAN1 TX */
-# define GPIO_CAN_RX		(1<<7)		/**< CAN1 RX */
+//# define GPIO_MULTI_1		(1<<2)		/**< USART2 CTS */
+//# define GPIO_MULTI_2		(1<<3)		/**< USART2 RTS */
+//# define GPIO_MULTI_3		(1<<4)		/**< USART2 TX */
+//# define GPIO_MULTI_4		(1<<5)		/**< USART2 RX */
+//# define GPIO_CAN_TX		(1<<6)		/**< CAN1 TX */
+//# define GPIO_CAN_RX		(1<<7)		/**< CAN1 RX */
 
-# define GPIO_SERVO_1		(1<<8)		/**< servo 1 output */
-# define GPIO_SERVO_2		(1<<9)		/**< servo 2 output */
-# define GPIO_SERVO_3		(1<<10)		/**< servo 3 output */
-# define GPIO_SERVO_4		(1<<11)		/**< servo 4 output */
-# define GPIO_SERVO_5		(1<<12)		/**< servo 5 output */
-# define GPIO_SERVO_6		(1<<13)		/**< servo 6 output */
-# define GPIO_SERVO_7		(1<<14)		/**< servo 7 output */
-# define GPIO_SERVO_8		(1<<15)		/**< servo 8 output */
+//# define GPIO_SERVO_1		(1<<8)		/**< servo 1 output */
+//# define GPIO_SERVO_2		(1<<9)		/**< servo 2 output */
+//# define GPIO_SERVO_3		(1<<10)		/**< servo 3 output */
+//# define GPIO_SERVO_4		(1<<11)		/**< servo 4 output */
+//# define GPIO_SERVO_5		(1<<12)		/**< servo 5 output */
+//# define GPIO_SERVO_6		(1<<13)		/**< servo 6 output */
+//# define GPIO_SERVO_7		(1<<14)		/**< servo 7 output */
+//# define GPIO_SERVO_8		(1<<15)		/**< servo 8 output */
 
 
 /**
@@ -145,6 +145,20 @@
 /* no GPIO driver on the PX4IOv2 board */
 #endif
 
+#ifdef CONFIG_ARCH_BOARD_PX4_STM32F4DISCOVERY
+/* no GPIO driver on the PX4_STM32F4DISCOVERY board */
+#endif
+
+#ifdef CONFIG_ARCH_BOARD_POSIXTEST
+/* no GPIO driver on the POSIXTEST board */
+#endif
+
+#if !defined(CONFIG_ARCH_BOARD_PX4IO_V1) && !defined(CONFIG_ARCH_BOARD_PX4IO_V2)  && \
+	!defined(CONFIG_ARCH_BOARD_PX4FMU_V1) && !defined(CONFIG_ARCH_BOARD_PX4FMU_V2) && \
+	!defined(CONFIG_ARCH_BOARD_AEROCORE) && !defined(CONFIG_ARCH_BOARD_PX4_STM32F4DISCOVERY) && \
+	!defined(CONFIG_ARCH_BOARD_POSIXTEST)
+# error No CONFIG_ARCH_BOARD_xxxx set
+#endif
 /*
  * IOCTL definitions.
  *
@@ -188,5 +202,13 @@
 #define GPIO_GET	GPIOC(12)
 
 #define GPIO_SENSOR_RAIL_RESET	GPIOC(13)
+
+#define GPIO_PERIPHERAL_RAIL_RESET	GPIOC(14)
+
+/** configure the board GPIOs in (arg) as outputs, initially low */
+#define GPIO_SET_OUTPUT_LOW	GPIOC(15)
+
+/** configure the board GPIOs in (arg) as outputs, initially high */
+#define GPIO_SET_OUTPUT_HIGH	GPIOC(16)
 
 #endif /* _DRV_GPIO_H */

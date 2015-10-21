@@ -51,7 +51,7 @@
  */
 
 
-#include <nuttx/config.h>
+#include <px4_config.h>
 
 #include <drivers/device/i2c.h>
 
@@ -249,7 +249,7 @@ MEASAirspeed::collect()
 	report.differential_pressure_raw_pa = diff_press_pa_raw;
 	report.max_differential_pressure_pa = _max_differential_pressure_pa;
 
-	if (_airspeed_pub > 0 && !(_pub_blocked)) {
+	if (_airspeed_pub != nullptr && !(_pub_blocked)) {
 		/* publish it */
 		orb_publish(ORB_ID(differential_pressure), _airspeed_pub, &report);
 	}
@@ -437,7 +437,7 @@ start(int i2c_bus)
 	}
 
 	/* set the poll rate to default, starts automatic data collection */
-	fd = open(AIRSPEED_DEVICE_PATH, O_RDONLY);
+	fd = open(PATH_MS4525, O_RDONLY);
 
 	if (fd < 0) {
 		goto fail;
@@ -488,10 +488,10 @@ test()
 	ssize_t sz;
 	int ret;
 
-	int fd = open(AIRSPEED_DEVICE_PATH, O_RDONLY);
+	int fd = open(PATH_MS4525, O_RDONLY);
 
 	if (fd < 0) {
-		err(1, "%s open failed (try 'meas_airspeed start' if the driver is not running", AIRSPEED_DEVICE_PATH);
+		err(1, "%s open failed (try 'meas_airspeed start' if the driver is not running", PATH_MS4525);
 	}
 
 	/* do a simple demand read */
@@ -519,7 +519,7 @@ test()
 		ret = poll(&fds, 1, 2000);
 
 		if (ret != 1) {
-			errx(1, "timed out waiting for sensor data");
+			errx(1, "timed out");
 		}
 
 		/* now go get it */
@@ -548,7 +548,7 @@ test()
 void
 reset()
 {
-	int fd = open(AIRSPEED_DEVICE_PATH, O_RDONLY);
+	int fd = open(PATH_MS4525, O_RDONLY);
 
 	if (fd < 0) {
 		err(1, "failed ");

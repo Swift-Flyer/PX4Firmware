@@ -39,7 +39,7 @@
  * @author Lorenz Meier <lm@inf.ethz.ch>
  */
 
-#include <nuttx/config.h>
+#include <px4_config.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -255,7 +255,7 @@ m25px_attach(void)
 			}
 
 			break;
-		}
+}
 	}
 
 	/* if last attempt is still unsuccessful, abort */
@@ -318,9 +318,9 @@ mtd_start(char *partition_names[], unsigned n_partitions)
 		ramtron_attach();
 		if(!attached)
 			m25px_attach();
-#else
+		#else
 		ramtron_attach();
-#endif
+		#endif
 	}
 
 	if (!mtd_dev) {
@@ -383,7 +383,7 @@ if(is_m25_attached){
 			      (unsigned long)offset, (unsigned long)nblocks);
 			exit(4);
 		}
-		snprintf(blockname, sizeof(blockname), "/dev/mtdblock%d", i);	
+		snprintf(blockname, sizeof(blockname), "/dev/mtdblock%d", i);
 		ret = ftl_initialize(i, part[i]);
 		if (ret < 0) {
 			warnx("ERROR: ftl_initialize %s failed: %d", blockname, ret);
@@ -400,7 +400,7 @@ if(is_m25_attached){
 		}
 	}
 
-	n_partitions_current = n_partitions;		
+	n_partitions_current = n_partitions;
 }		
 
 	started = true;
@@ -548,7 +548,7 @@ mtd_rwtest(char *partition_names[], unsigned n_partitions)
 	uint8_t v[128], v2[128];
 	for (uint8_t i = 0; i < n_partitions; i++) {
 		ssize_t count = 0;
-        off_t offset = 0;
+                off_t offset = 0;
 		printf("rwtest %s testing %u bytes\n", partition_names[i], expected_size);
 		int fd = open(partition_names[i], O_RDWR);
 		if (fd == -1) {

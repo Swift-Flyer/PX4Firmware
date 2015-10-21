@@ -178,21 +178,6 @@ private:
 const F4BYFMU::GPIOConfig F4BYFMU::_gpio_tab[] = {
     {GPIO_GPIO0_INPUT, GPIO_GPIO0_OUTPUT, 0},
     {GPIO_GPIO1_INPUT, GPIO_GPIO1_OUTPUT, 0},
-    {GPIO_GPIO2_INPUT, GPIO_GPIO2_OUTPUT, GPIO_USART2_CTS_2},
-    {GPIO_GPIO3_INPUT, GPIO_GPIO3_OUTPUT, GPIO_USART2_RTS_2},
-    {GPIO_GPIO4_INPUT, GPIO_GPIO4_OUTPUT, GPIO_USART2_TX_2},
-    {GPIO_GPIO5_INPUT, GPIO_GPIO5_OUTPUT, GPIO_USART2_RX_2},
-    {GPIO_GPIO6_INPUT, GPIO_GPIO6_OUTPUT, GPIO_CAN1_TX_3},
-    {GPIO_GPIO7_INPUT, GPIO_GPIO7_OUTPUT, GPIO_CAN1_RX_3},
-    
-    {GPIO_GPIO8_INPUT,  GPIO_GPIO8_OUTPUT, GPIO_SERVO_1},
-    {GPIO_GPIO9_INPUT,  GPIO_GPIO9_OUTPUT, GPIO_SERVO_2},
-    {GPIO_GPIO10_INPUT, GPIO_GPIO10_OUTPUT, GPIO_SERVO_3},
-    {GPIO_GPIO11_INPUT, GPIO_GPIO11_OUTPUT, GPIO_SERVO_4},
-    {GPIO_GPIO12_INPUT, GPIO_GPIO12_OUTPUT, GPIO_SERVO_5},
-    {GPIO_GPIO13_INPUT, GPIO_GPIO13_OUTPUT, GPIO_SERVO_6},
-    {GPIO_GPIO14_INPUT, GPIO_GPIO14_OUTPUT, GPIO_SERVO_7},
-    {GPIO_GPIO15_INPUT, GPIO_GPIO15_OUTPUT, GPIO_SERVO_8},
 };
 
 const unsigned F4BYFMU::_ngpio = sizeof(F4BYFMU::_gpio_tab) / sizeof(F4BYFMU::_gpio_tab[0]);
@@ -1270,27 +1255,11 @@ F4BYFMU::gpio_reset(void)
 			stm32_configgpio(_gpio_tab[i].output);
 		}
 	}
-
-	/* if we have a GPIO direction control, set it to zero (input) */
-	stm32_gpiowrite(GPIO_GPIO_DIR, 0);
-	stm32_configgpio(GPIO_GPIO_DIR);
 }
 
 void
 F4BYFMU::gpio_set_function(uint32_t gpios, int function)
 {
-	/*
-	 * GPIOs 0 and 1 must have the same direction as they are buffered
-	 * by a shared 2-port driver.  Any attempt to set either sets both.
-	 */
-	if (gpios & 3) {
-		gpios |= 3;
-
-		/* flip the buffer to output mode if required */
-		if (GPIO_SET_OUTPUT == function)
-			stm32_gpiowrite(GPIO_GPIO_DIR, 1);
-	}
-
 	/* configure selected GPIOs as required */
 	for (unsigned i = 0; i < _ngpio; i++) {
 		if (gpios & (1 << i)) {
@@ -1311,10 +1280,6 @@ F4BYFMU::gpio_set_function(uint32_t gpios, int function)
 			}
 		}
 	}
-
-	/* flip buffer to input mode if required */
-	if ((GPIO_SET_INPUT == function) && (gpios & 3))
-		stm32_gpiowrite(GPIO_GPIO_DIR, 0);
 }
 
 void
@@ -1411,46 +1376,46 @@ fmu_new_mode(PortMode new_mode)
 	g_fmu->ioctl(0, GPIO_RESET, 0);
 
 	gpio_bits = 0;
-	servo_mode = F4BYFMU::MODE_NONE;
+	servo_mode = F4BYFMU::MODE_8PWM;
 
-	switch (new_mode) {
-	case PORT_FULL_GPIO:
-	case PORT_MODE_UNSET:
-		/* nothing more to do here */
-		break;
-
-	case PORT_FULL_PWM:
-		/* select 8-pin PWM mode */
-		servo_mode = F4BYFMU::MODE_8PWM;//F4BY
-		break;
-
-	case PORT_FULL_SERIAL:
-	  servo_mode = F4BYFMU::MODE_8PWM;
-		/* set all multi-GPIOs to serial mode */
-		gpio_bits = GPIO_MULTI_1 | GPIO_MULTI_2 | GPIO_MULTI_3 | GPIO_MULTI_4;
-		break;
-
-	case PORT_GPIO_AND_SERIAL:
-	  servo_mode = F4BYFMU::MODE_8PWM;
-		/* set RX/TX multi-GPIOs to serial mode */
-		gpio_bits = GPIO_MULTI_3 | GPIO_MULTI_4;
-		break;
-
-	case PORT_PWM_AND_SERIAL:
-		/* select 2-pin PWM mode */
-		servo_mode = F4BYFMU::MODE_8PWM;
-		/* set RX/TX multi-GPIOs to serial mode */
-		gpio_bits = GPIO_MULTI_3 | GPIO_MULTI_4;
-		break;
-
-	case PORT_PWM_AND_GPIO:
-		/* select 2-pin PWM mode */
-		servo_mode = F4BYFMU::MODE_8PWM;
-		break;
-
-	default:
-		return -1;
-	}
+//	switch (new_mode) {
+//	case PORT_FULL_GPIO:
+//	case PORT_MODE_UNSET:
+//		/* nothing more to do here */
+//		break;
+//
+//	case PORT_FULL_PWM:
+//		/* select 8-pin PWM mode */
+//		servo_mode = F4BYFMU::MODE_8PWM;//F4BY
+//		break;
+//
+//	case PORT_FULL_SERIAL:
+//	  servo_mode = F4BYFMU::MODE_8PWM;
+//		/* set all multi-GPIOs to serial mode */
+//		gpio_bits = GPIO_MULTI_1 | GPIO_MULTI_2 | GPIO_MULTI_3 | GPIO_MULTI_4;
+//		break;
+//
+//	case PORT_GPIO_AND_SERIAL:
+//	  servo_mode = F4BYFMU::MODE_8PWM;
+//		/* set RX/TX multi-GPIOs to serial mode */
+//		gpio_bits = GPIO_MULTI_3 | GPIO_MULTI_4;
+//		break;
+//
+//	case PORT_PWM_AND_SERIAL:
+//		/* select 2-pin PWM mode */
+//		servo_mode = F4BYFMU::MODE_8PWM;
+//		/* set RX/TX multi-GPIOs to serial mode */
+//		gpio_bits = GPIO_MULTI_3 | GPIO_MULTI_4;
+//		break;
+//
+//	case PORT_PWM_AND_GPIO:
+//		/* select 2-pin PWM mode */
+//		servo_mode = F4BYFMU::MODE_8PWM;
+//		break;
+//
+//	default:
+//		return -1;
+//	}
 
 	/* adjust GPIO config for serial mode(s) */
 	if (gpio_bits != 0)

@@ -45,7 +45,7 @@
  * claim the timer and then drive it directly.
  */
 
-#include <nuttx/config.h>
+#include <px4_config.h>
 #include <nuttx/arch.h>
 #include <nuttx/irq.h>
 
@@ -95,9 +95,9 @@
 # define HRT_TIMER_BASE		STM32_TIM3_BASE
 # define HRT_TIMER_POWER_REG	STM32_RCC_APB1ENR
 #if defined(CONFIG_ARCH_BOARD_F4BY)
-# define HRT_TIMER_POWER_BIT   RCC_APB1ENR_TIM3EN
+# define HRT_TIMER_POWER_BIT	RCC_APB1ENR_TIM3EN
 #else
-# define HRT_TIMER_POWER_BIT   RCC_APB1ENR_TIM3EN
+# define HRT_TIMER_POWER_BIT	RCC_APB1ENR_TIM3EN
 #endif
 # define HRT_TIMER_VECTOR	STM32_IRQ_TIM3
 # define HRT_TIMER_CLOCK	STM32_APB1_TIM3_CLKIN
@@ -110,7 +110,7 @@
 #if defined(CONFIG_ARCH_BOARD_F4BY)
 # define HRT_TIMER_POWER_BIT   RCC_APB1ENR_TIM4EN
 #else
-# define HRT_TIMER_POWER_BIT   RCC_APB2ENR_TIM4EN
+# define HRT_TIMER_POWER_BIT	RCC_APB2ENR_TIM4EN
 #endif
 # define HRT_TIMER_VECTOR	STM32_IRQ_TIM4
 # define HRT_TIMER_CLOCK	STM32_APB1_TIM4_CLKIN
@@ -261,9 +261,11 @@ static uint16_t			latency_baseline;
 static uint16_t			latency_actual;
 
 /* latency histogram */
-#define LATENCY_BUCKET_COUNT	8
-static const uint16_t		latency_buckets[LATENCY_BUCKET_COUNT] = { 1, 2, 5, 10, 20, 50, 100, 1000 };
-static uint32_t			latency_counters[LATENCY_BUCKET_COUNT + 1];
+#define LATENCY_BUCKET_COUNT 8
+__EXPORT const uint16_t latency_bucket_count = LATENCY_BUCKET_COUNT;
+__EXPORT const uint16_t	latency_buckets[LATENCY_BUCKET_COUNT] = { 1, 2, 5, 10, 20, 50, 100, 1000 };
+__EXPORT uint32_t		latency_counters[LATENCY_BUCKET_COUNT + 1];
+
 
 /* timer-specific functions */
 static void		hrt_tim_init(void);
@@ -318,7 +320,7 @@ static void		hrt_call_invoke(void);
 #if defined(CONFIG_ARCH_BOARD_F4BY)
 #  define CCMR1_PPM	0x100//2			/* not on TI1/TI2 */
 #else
-#  define CCMR1_PPM    2                       /* not on TI1/TI2 */
+#  define CCMR1_PPM	2			/* not on TI1/TI2 */
 #endif
 
 #  define CCMR2_PPM	0			/* on TI3, not on TI4 */
@@ -342,7 +344,7 @@ static void		hrt_call_invoke(void);
 #if defined(CONFIG_ARCH_BOARD_F4BY)
 #  define CCMR2_PPM    0x100//2                        /* on TI3, not on TI4 */
 #else
-#  define CCMR2_PPM    2                       /* on TI3, not on TI4 */
+#  define CCMR2_PPM	2			/* on TI3, not on TI4 */
 #endif
 #  define CCER_PPM	(GTIM_CCER_CC4E | GTIM_CCER_CC4P | GTIM_CCER_CC4NP) /* CC4, both edges */
 #  define CCER_PPM_FLIP	GTIM_CCER_CC4P

@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2014 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2014, 2015 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -48,7 +48,7 @@ const char *const UavcanGnssBridge::NAME = "gnss";
 UavcanGnssBridge::UavcanGnssBridge(uavcan::INode &node) :
 _node(node),
 _sub_fix(node),
-_report_pub(-1)
+_report_pub(nullptr)
 {
 }
 
@@ -92,7 +92,7 @@ void UavcanGnssBridge::gnss_fix_sub_cb(const uavcan::ReceivedDataStructure<uavca
 
 	auto report = ::vehicle_gps_position_s();
 
-	report.timestamp_position = hrt_absolute_time();
+	report.timestamp_position = msg.getMonotonicTimestamp().toUSec();
 	report.lat = msg.latitude_deg_1e8 / 10;
 	report.lon = msg.longitude_deg_1e8 / 10;
 	report.alt = msg.height_msl_mm;
@@ -159,11 +159,11 @@ void UavcanGnssBridge::gnss_fix_sub_cb(const uavcan::ReceivedDataStructure<uavca
 	report.vel_ned_valid = true;
 
 	report.timestamp_time = report.timestamp_position;
-	report.time_gps_usec = uavcan::UtcTime(msg.gnss_timestamp).toUSec();	// Convert to microseconds
+	report.time_utc_usec = uavcan::UtcTime(msg.gnss_timestamp).toUSec();	// Convert to microseconds
 
 	report.satellites_used = msg.sats_used;
 
-	if (_report_pub > 0) {
+	if (_report_pub != nullptr) {
 		orb_publish(ORB_ID(vehicle_gps_position), _report_pub, &report);
 
 	} else {
