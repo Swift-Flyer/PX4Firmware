@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2012 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2012-2015 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -46,7 +46,10 @@
 #include "drv_sensor.h"
 #include "drv_orb_dev.h"
 
-#define GYRO_DEVICE_PATH	"/dev/gyro"
+#define GYRO_BASE_DEVICE_PATH	"/dev/gyro"
+#define GYRO0_DEVICE_PATH	"/dev/gyro0"
+#define GYRO1_DEVICE_PATH	"/dev/gyro1"
+#define GYRO2_DEVICE_PATH	"/dev/gyro2"
 
 /**
  * gyro report structure.  Reads from the device must be in multiples of this
@@ -81,27 +84,27 @@ struct gyro_scale {
 /*
  * ObjDev tag for raw gyro data.
  */
-ORB_DECLARE(sensor_gyro0);
-ORB_DECLARE(sensor_gyro1);
-ORB_DECLARE(sensor_gyro2);
+ORB_DECLARE(sensor_gyro);
 
 /*
  * ioctl() definitions
  */
 
 #define _GYROIOCBASE		(0x2300)
-#define _GYROIOC(_n)		(_IOC(_GYROIOCBASE, _n))
+#define _GYROIOC(_n)		(_PX4_IOC(_GYROIOCBASE, _n))
 
 /** set the gyro internal sample rate to at least (arg) Hz */
 #define GYROIOCSSAMPLERATE	_GYROIOC(0)
 
+#define GYRO_SAMPLERATE_DEFAULT    1000003	/**< default sample rate */
+
 /** return the gyro internal sample rate in Hz */
 #define GYROIOCGSAMPLERATE	_GYROIOC(1)
 
-/** set the gyro internal lowpass filter to no lower than (arg) Hz */
+/** set the software low-pass filter cut-off in Hz */
 #define GYROIOCSLOWPASS		_GYROIOC(2)
 
-/** set the gyro internal lowpass filter to no lower than (arg) Hz */
+/** get the software low-pass filter cut-off in Hz */
 #define GYROIOCGLOWPASS		_GYROIOC(3)
 
 /** set the gyro scaling constants to (arg) */
@@ -118,5 +121,11 @@ ORB_DECLARE(sensor_gyro2);
 
 /** check the status of the sensor */
 #define GYROIOCSELFTEST		_GYROIOC(8)
+
+/** set the hardware low-pass filter cut-off no lower than (arg) Hz */
+#define GYROIOCSHWLOWPASS	_GYROIOC(9)
+
+/** get the hardware low-pass filter cut-off in Hz*/
+#define GYROIOCGHWLOWPASS	_GYROIOC(10)
 
 #endif /* _DRV_GYRO_H */

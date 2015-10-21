@@ -216,12 +216,12 @@ int frsky_telemetry_main(int argc, char *argv[])
 			errx(0, "frsky_telemetry already running");
 
 		thread_should_exit = false;
-		frsky_task = task_spawn_cmd("frsky_telemetry",
+		frsky_task = px4_task_spawn_cmd("frsky_telemetry",
 					  SCHED_DEFAULT,
 					  SCHED_PRIORITY_DEFAULT,
 					  2000,
 					  frsky_telemetry_thread_main,
-					  (const char **)argv);
+					  (char * const *)argv);
 
 		while (!thread_running) {
 			usleep(200);

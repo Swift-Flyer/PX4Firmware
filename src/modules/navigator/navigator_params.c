@@ -40,7 +40,7 @@
  * @author Thomas Gubler <thomasgubler@gmail.com>
  */
 
-#include <nuttx/config.h>
+#include <px4_config.h>
 
 #include <systemlib/param/param.h>
 
@@ -50,7 +50,8 @@
  * Default value of loiter radius for missions, loiter, RTL, etc. (fixedwing only).
  *
  * @unit meters
- * @min 0.0
+ * @min 20
+ * @max 200
  * @group Mission
  */
 PARAM_DEFINE_FLOAT(NAV_LOITER_RAD, 50.0f);
@@ -61,10 +62,11 @@ PARAM_DEFINE_FLOAT(NAV_LOITER_RAD, 50.0f);
  * Default acceptance radius, overridden by acceptance radius of waypoint if set.
  *
  * @unit meters
- * @min 1.0
+ * @min 0.05
+ * @max 200
  * @group Mission
  */
-PARAM_DEFINE_FLOAT(NAV_ACC_RAD, 25.0f);
+PARAM_DEFINE_FLOAT(NAV_ACC_RAD, 10.0f);
 
 /**
  * Set OBC mode for data link loss
@@ -92,8 +94,8 @@ PARAM_DEFINE_INT32(NAV_RCL_OBC, 0);
  * Latitude of airfield home waypoint
  *
  * @unit degrees * 1e7
- * @min 0.0
- * @group DLL
+ * @min 0
+ * @group Data Link Loss
  */
 PARAM_DEFINE_INT32(NAV_AH_LAT, -265847810);
 
@@ -103,8 +105,8 @@ PARAM_DEFINE_INT32(NAV_AH_LAT, -265847810);
  * Longitude of airfield home waypoint
  *
  * @unit degrees * 1e7
- * @min 0.0
- * @group DLL
+ * @min 0
+ * @group Data Link Loss
  */
 PARAM_DEFINE_INT32(NAV_AH_LON, 1518423250);
 
@@ -115,6 +117,6 @@ PARAM_DEFINE_INT32(NAV_AH_LON, 1518423250);
  *
  * @unit m
  * @min 0.0
- * @group DLL
+ * @group Data Link Loss
  */
 PARAM_DEFINE_FLOAT(NAV_AH_ALT, 600.0f);

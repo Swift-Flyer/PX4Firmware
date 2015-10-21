@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (c) 2013, 2014 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2013-2015 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -36,7 +36,7 @@
  * Driver for the ST LSM303D MEMS accelerometer / magnetometer connected via SPI.
  */
 
-#include <nuttx/config.h>
+#include <px4_config.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -196,6 +196,7 @@ static const int ERROR = -1;
 
 #define REG7_CONT_MODE_M		((0<<1) | (0<<0))
 
+#define REG_STATUS_A_NEW_ZYXADA		0x08
 
 #define INT_CTRL_M              0x12
 #define INT_SRC_M               0x13
@@ -210,6 +211,20 @@ static const int ERROR = -1;
 #define LSM303D_MAG_DEFAULT_RATE			100
 
 #define LSM303D_ONE_G					9.80665f
+
+#ifdef PX4_SPI_BUS_EXT
+#define EXTERNAL_BUS PX4_SPI_BUS_EXT
+#else
+#define EXTERNAL_BUS 0
+#endif
+
+/*
+  we set the timer interrupt to run a bit faster than the desired
+  sample rate and then throw away duplicates using the data ready bit.
+  This time reduction is enough to cope with worst case timing jitter
+  due to other timers
+ */
+#define LSM303D_TIMER_REDUCTION				200
 
 extern "C" { __EXPORT int lsm303d_main(int argc, char *argv[]); }
 
@@ -260,8 +275,8 @@ private:
 	unsigned		_call_accel_interval;
 	unsigned		_call_mag_interval;
 
-	RingBuffer		*_accel_reports;
-	RingBuffer		*_mag_reports;
+	ringbuffer::RingBuffer	*_accel_reports;
+	ringbuffer::RingBuffer		*_mag_reports;
 
 	struct accel_scale	_accel_scale;
 	unsigned		_accel_range_m_s2;
@@ -275,7 +290,7 @@ private:
 	unsigned		_mag_samplerate;
 
 	orb_advert_t		_accel_topic;
-	orb_id_t		_accel_orb_id;
+	int			_accel_orb_class_instance;
 	int			_accel_class_instance;
 
 	unsigned		_accel_read;
@@ -283,9 +298,9 @@ private:
 
 	perf_counter_t		_accel_sample_perf;
 	perf_counter_t		_mag_sample_perf;
-	perf_counter_t		_accel_reschedules;
 	perf_counter_t		_bad_registers;
 	perf_counter_t		_bad_values;
+	perf_counter_t		_accel_duplicates;
 
 	uint8_t			_register_wait;
 
@@ -298,6 +313,9 @@ private:
 	// values used to 
 	float			_last_accel[3];
 	uint8_t			_constant_accel_count;
+
+	// last temperature value
+	float			_last_temperature;
 
 	// this is used to support runtime checking of key
 	// configuration registers to detect SPI bus errors and sensor
@@ -328,6 +346,13 @@ private:
 	 * disable I2C on the chip
 	 */
 	void			disable_i2c();
+
+	/**
+	 * Get the internal / external state
+	 *
+	 * @return true if the sensor is not on the main MCU board
+	 */
+	bool			is_external() { return (_bus == EXTERNAL_BUS); }
 
 	/**
 	 * Static trampoline from the hrt_call context; because we don't have a
@@ -507,7 +532,7 @@ private:
 	LSM303D				*_parent;
 
 	orb_advert_t			_mag_topic;
-	orb_id_t			_mag_orb_id;
+	int				_mag_orb_class_instance;
 	int				_mag_class_instance;
 
 	void				measure();
@@ -538,28 +563,36 @@ LSM303D::LSM303D(int bus, const char* path, spi_dev_e device, enum Rotation rota
 	_mag_range_ga(0.0f),
 	_mag_range_scale(0.0f),
 	_mag_samplerate(0),
-	_accel_topic(-1),
-	_accel_orb_id(nullptr),
+	_accel_topic(nullptr),
+	_accel_orb_class_instance(-1),
 	_accel_class_instance(-1),
 	_accel_read(0),
 	_mag_read(0),
 	_accel_sample_perf(perf_alloc(PC_ELAPSED, "lsm303d_accel_read")),
 	_mag_sample_perf(perf_alloc(PC_ELAPSED, "lsm303d_mag_read")),
-	_accel_reschedules(perf_alloc(PC_COUNT, "lsm303d_accel_resched")),
 	_bad_registers(perf_alloc(PC_COUNT, "lsm303d_bad_registers")),
 	_bad_values(perf_alloc(PC_COUNT, "lsm303d_bad_values")),
+	_accel_duplicates(perf_alloc(PC_COUNT, "lsm303d_accel_duplicates")),
 	_register_wait(0),
 	_accel_filter_x(LSM303D_ACCEL_DEFAULT_RATE, LSM303D_ACCEL_DEFAULT_DRIVER_FILTER_FREQ),
 	_accel_filter_y(LSM303D_ACCEL_DEFAULT_RATE, LSM303D_ACCEL_DEFAULT_DRIVER_FILTER_FREQ),
 	_accel_filter_z(LSM303D_ACCEL_DEFAULT_RATE, LSM303D_ACCEL_DEFAULT_DRIVER_FILTER_FREQ),
 	_rotation(rotation),
 	_constant_accel_count(0),
+	_last_temperature(0),
 	_checked_next(0)
 {
-	_device_id.devid_s.devtype = DRV_MAG_DEVTYPE_LSM303D;
+
 
 	// enable debug() calls
 	_debug_enabled = true;
+
+	_device_id.devid_s.devtype = DRV_ACC_DEVTYPE_LSM303D;
+
+	/* Prime _mag with parents devid. */
+	_mag->_device_id.devid = _device_id.devid;
+	_mag->_device_id.devid_s.devtype = DRV_MAG_DEVTYPE_LSM303D;
+
 
 	// default scale factors
 	_accel_scale.x_offset = 0.0f;
@@ -589,7 +622,7 @@ LSM303D::~LSM303D()
 		delete _mag_reports;
 
 	if (_accel_class_instance != -1)
-		unregister_class_devname(ACCEL_DEVICE_PATH, _accel_class_instance);
+		unregister_class_devname(ACCEL_BASE_DEVICE_PATH, _accel_class_instance);
 
 	delete _mag;
 
@@ -598,7 +631,7 @@ LSM303D::~LSM303D()
 	perf_free(_mag_sample_perf);
 	perf_free(_bad_registers);
 	perf_free(_bad_values);
-	perf_free(_accel_reschedules);
+	perf_free(_accel_duplicates);
 }
 
 int
@@ -613,13 +646,12 @@ LSM303D::init()
 	}
 
 	/* allocate basic report buffers */
-	_accel_reports = new RingBuffer(2, sizeof(accel_report));
+	_accel_reports = new ringbuffer::RingBuffer(2, sizeof(accel_report));
 
 	if (_accel_reports == nullptr)
 		goto out;
 
-	/* advertise accel topic */
-	_mag_reports = new RingBuffer(2, sizeof(mag_report));
+	_mag_reports = new ringbuffer::RingBuffer(2, sizeof(mag_report));
 
 	if (_mag_reports == nullptr)
 		goto out;
@@ -636,55 +668,30 @@ LSM303D::init()
 	/* fill report structures */
 	measure();
 
-		/* advertise sensor topic, measure manually to initialize valid report */
-		struct mag_report mrp;
-		_mag_reports->get(&mrp);
+	/* advertise sensor topic, measure manually to initialize valid report */
+	struct mag_report mrp;
+	_mag_reports->get(&mrp);
 
-		/* measurement will have generated a report, publish */
-	switch (_mag->_mag_class_instance) {
-		case CLASS_DEVICE_PRIMARY:
-			_mag->_mag_orb_id = ORB_ID(sensor_mag0);
-			break;
+	/* measurement will have generated a report, publish */
+	_mag->_mag_topic = orb_advertise_multi(ORB_ID(sensor_mag), &mrp,
+		&_mag->_mag_orb_class_instance, ORB_PRIO_LOW);
 
-		case CLASS_DEVICE_SECONDARY:
-			_mag->_mag_orb_id = ORB_ID(sensor_mag1);
-			break;
-
-		case CLASS_DEVICE_TERTIARY:
-			_mag->_mag_orb_id = ORB_ID(sensor_mag2);
-			break;
-	}
-
-	_mag->_mag_topic = orb_advertise(_mag->_mag_orb_id, &mrp);
-
-	if (_mag->_mag_topic < 0) {
+	if (_mag->_mag_topic == nullptr) {
 		warnx("ADVERT ERR");
 	}
 
-	_accel_class_instance = register_class_devname(ACCEL_DEVICE_PATH);
 
-		/* advertise sensor topic, measure manually to initialize valid report */
-		struct accel_report arp;
-		_accel_reports->get(&arp);
+	_accel_class_instance = register_class_devname(ACCEL_BASE_DEVICE_PATH);
 
-		/* measurement will have generated a report, publish */
-	switch (_accel_class_instance) {
-		case CLASS_DEVICE_PRIMARY:
-			_accel_orb_id = ORB_ID(sensor_accel0);
-			break;
+	/* advertise sensor topic, measure manually to initialize valid report */
+	struct accel_report arp;
+	_accel_reports->get(&arp);
 
-		case CLASS_DEVICE_SECONDARY:
-			_accel_orb_id = ORB_ID(sensor_accel1);
-			break;
+	/* measurement will have generated a report, publish */
+	_accel_topic = orb_advertise_multi(ORB_ID(sensor_accel), &arp,
+		&_accel_orb_class_instance, (is_external()) ? ORB_PRIO_VERY_HIGH : ORB_PRIO_DEFAULT);
 
-		case CLASS_DEVICE_TERTIARY:
-			_accel_orb_id = ORB_ID(sensor_accel2);
-			break;
-	}
-
-	_accel_topic = orb_advertise(_accel_orb_id, &arp);
-
-	if (_accel_topic < 0) {
+	if (_accel_topic == nullptr) {
 		warnx("ADVERT ERR");
 	}
 
@@ -717,7 +724,7 @@ LSM303D::reset()
 
 	/* enable mag */
 	write_checked_reg(ADDR_CTRL_REG7, REG7_CONT_MODE_M);
-	write_checked_reg(ADDR_CTRL_REG5, REG5_RES_HIGH_M);
+	write_checked_reg(ADDR_CTRL_REG5, REG5_RES_HIGH_M | REG5_ENABLE_T);
 	write_checked_reg(ADDR_CTRL_REG3, 0x04); // DRDY on ACCEL on INT1
 	write_checked_reg(ADDR_CTRL_REG4, 0x04); // DRDY on MAG on INT2
 
@@ -876,7 +883,9 @@ LSM303D::ioctl(struct file *filp, int cmd, unsigned long arg)
 
 				/* update interval for next measurement */
 				/* XXX this is a bit shady, but no other way to adjust... */
-				_accel_call.period = _call_accel_interval = ticks;
+				_call_accel_interval = ticks;
+
+                                _accel_call.period = _call_accel_interval - LSM303D_TIMER_REDUCTION;
 
 				/* if we need to start the poll state machine, do it */
 				if (want_start)
@@ -926,7 +935,7 @@ LSM303D::ioctl(struct file *filp, int cmd, unsigned long arg)
 	}
 
 	case ACCELIOCGLOWPASS:
-		return _accel_filter_x.get_cutoff_freq();
+		return static_cast<int>(_accel_filter_x.get_cutoff_freq());
 
 	case ACCELIOCSSCALE: {
 		/* copy scale, but only if off by a few percent */
@@ -955,6 +964,13 @@ LSM303D::ioctl(struct file *filp, int cmd, unsigned long arg)
 
 	case ACCELIOCSELFTEST:
 		return accel_self_test();
+
+	case ACCELIOCSHWLOWPASS:
+		accel_set_onchip_lowpass_filter_bandwidth(arg);
+		return OK;
+
+	case ACCELIOCGHWLOWPASS:
+		return _accel_onchip_filter_bandwith;
 
 	default:
 		/* give it to the superclass */
@@ -1073,7 +1089,10 @@ LSM303D::mag_ioctl(struct file *filp, int cmd, unsigned long arg)
 		return mag_self_test();
 
 	case MAGIOCGEXTERNAL:
-		/* no external mag board yet */
+		/* Even if this sensor is on the "external" SPI bus
+		 * it is still fixed to the autopilot assembly,
+		 * so always return 0.
+		 */
 		return 0;
 
 	default:
@@ -1313,8 +1332,9 @@ LSM303D::accel_set_samplerate(unsigned frequency)
 	uint8_t setbits = 0;
 	uint8_t clearbits = REG1_RATE_BITS_A;
 
-	if (frequency == 0)
+	if (frequency == 0 || frequency == ACCEL_SAMPLERATE_DEFAULT) {
 		frequency = 1600;
+	}
 
 	if (frequency <= 100) {
 		setbits |= REG1_RATE_100HZ_A;
@@ -1386,7 +1406,10 @@ LSM303D::start()
 	_mag_reports->flush();
 
 	/* start polling at the specified rate */
-	hrt_call_every(&_accel_call, 1000, _call_accel_interval, (hrt_callout)&LSM303D::measure_trampoline, this);
+	hrt_call_every(&_accel_call,
+                       1000,
+                       _call_accel_interval - LSM303D_TIMER_REDUCTION,
+                       (hrt_callout)&LSM303D::measure_trampoline, this);
 	hrt_call_every(&_mag_call, 1000, _call_mag_interval, (hrt_callout)&LSM303D::mag_measure_trampoline, this);
 }
 
@@ -1436,9 +1459,9 @@ LSM303D::check_registers(void)
 		 */
 		if (_checked_next != 0) {
 			write_reg(_checked_registers[_checked_next], _checked_values[_checked_next]);
-	}
+		}
 		_register_wait = 20;
-	}
+        }
         _checked_next = (_checked_next+1) % LSM303D_NUM_CHECKED_REGISTERS;
 }
 
@@ -1464,20 +1487,6 @@ LSM303D::measure()
 
 	check_registers();
 
-	// if the accel doesn't have any data ready then re-schedule
-	// for 100 microseconds later. This ensures we don't double
-	// read a value and then miss the next value.
-	// Note that DRDY is not available when the lsm303d is
-	// connected on the external bus
-#ifdef GPIO_EXTI_ACCEL_DRDY
-	if (_bus == PX4_SPI_BUS_SENSORS && stm32_gpioread(GPIO_EXTI_ACCEL_DRDY) == 0) {
-		perf_count(_accel_reschedules);
-		hrt_call_delay(&_accel_call, 100);
-                perf_end(_accel_sample_perf);
-		return;
-	}
-#endif
-
 	if (_register_wait != 0) {
 		// we are waiting for some good transfers before using
 		// the sensor again.
@@ -1490,6 +1499,12 @@ LSM303D::measure()
 	memset(&raw_accel_report, 0, sizeof(raw_accel_report));
 	raw_accel_report.cmd = ADDR_STATUS_A | DIR_READ | ADDR_INCREMENT;
 	transfer((uint8_t *)&raw_accel_report, (uint8_t *)&raw_accel_report, sizeof(raw_accel_report));
+
+        if (!(raw_accel_report.status & REG_STATUS_A_NEW_ZYXADA)) {
+		perf_end(_accel_sample_perf);
+		perf_count(_accel_duplicates);
+		return;
+        }
 
 	/*
 	 * 1) Scale raw value to SI units using scaling from datasheet.
@@ -1509,6 +1524,9 @@ LSM303D::measure()
 
 	accel_report.timestamp = hrt_absolute_time();
 
+	// use the temperature from the last mag reading
+	accel_report.temperature = _last_temperature;
+
 	// report the error count as the sum of the number of bad
 	// register reads and bad values. This allows the higher level
 	// code to decide if it should use this sensor based on
@@ -1519,9 +1537,16 @@ LSM303D::measure()
 	accel_report.y_raw = raw_accel_report.y;
 	accel_report.z_raw = raw_accel_report.z;
 
-	float x_in_new = ((accel_report.x_raw * _accel_range_scale) - _accel_scale.x_offset) * _accel_scale.x_scale;
-	float y_in_new = ((accel_report.y_raw * _accel_range_scale) - _accel_scale.y_offset) * _accel_scale.y_scale;
-	float z_in_new = ((accel_report.z_raw * _accel_range_scale) - _accel_scale.z_offset) * _accel_scale.z_scale;
+	float xraw_f = raw_accel_report.x;
+	float yraw_f = raw_accel_report.y;
+	float zraw_f = raw_accel_report.z;
+
+	// apply user specified rotation
+	rotate_3f(_rotation, xraw_f, yraw_f, zraw_f);
+
+	float x_in_new = ((xraw_f * _accel_range_scale) - _accel_scale.x_offset) * _accel_scale.x_scale;
+	float y_in_new = ((yraw_f * _accel_range_scale) - _accel_scale.y_offset) * _accel_scale.y_scale;
+	float z_in_new = ((zraw_f * _accel_range_scale) - _accel_scale.z_offset) * _accel_scale.z_scale;
 
 	/*
 	  we have logs where the accelerometers get stuck at a fixed
@@ -1557,9 +1582,6 @@ LSM303D::measure()
 	accel_report.y = _accel_filter_y.apply(y_in_new);
 	accel_report.z = _accel_filter_z.apply(z_in_new);
 
-	// apply user specified rotation
-	rotate_3f(_rotation, accel_report.x, accel_report.y, accel_report.z);
-
 	accel_report.scaling = _accel_range_scale;
 	accel_report.range_m_s2 = _accel_range_m_s2;
 
@@ -1570,7 +1592,7 @@ LSM303D::measure()
 
 	if (!(_pub_blocked)) {
 		/* publish it */
-		orb_publish(_accel_orb_id, _accel_topic, &accel_report);
+		orb_publish(ORB_ID(sensor_accel), _accel_topic, &accel_report);
 	}
 
 	_accel_read++;
@@ -1586,6 +1608,7 @@ LSM303D::mag_measure()
 #pragma pack(push, 1)
 	struct {
 		uint8_t		cmd;
+		int16_t		temperature;
 		uint8_t		status;
 		int16_t		x;
 		int16_t		y;
@@ -1594,13 +1617,14 @@ LSM303D::mag_measure()
 #pragma pack(pop)
 
 	mag_report mag_report;
+	memset(&mag_report, 0, sizeof(mag_report));
 
 	/* start the performance counter */
 	perf_begin(_mag_sample_perf);
 
 	/* fetch data from the sensor */
 	memset(&raw_mag_report, 0, sizeof(raw_mag_report));
-	raw_mag_report.cmd = ADDR_STATUS_M | DIR_READ | ADDR_INCREMENT;
+	raw_mag_report.cmd = ADDR_OUT_TEMP_L | DIR_READ | ADDR_INCREMENT;
 	transfer((uint8_t *)&raw_mag_report, (uint8_t *)&raw_mag_report, sizeof(raw_mag_report));
 
 	/*
@@ -1624,24 +1648,35 @@ LSM303D::mag_measure()
 	mag_report.x_raw = raw_mag_report.x;
 	mag_report.y_raw = raw_mag_report.y;
 	mag_report.z_raw = raw_mag_report.z;
-	mag_report.x = ((mag_report.x_raw * _mag_range_scale) - _mag_scale.x_offset) * _mag_scale.x_scale;
-	mag_report.y = ((mag_report.y_raw * _mag_range_scale) - _mag_scale.y_offset) * _mag_scale.y_scale;
-	mag_report.z = ((mag_report.z_raw * _mag_range_scale) - _mag_scale.z_offset) * _mag_scale.z_scale;
+
+	float xraw_f = mag_report.x_raw;
+	float yraw_f = mag_report.y_raw;
+	float zraw_f = mag_report.z_raw;
+
+	/* apply user specified rotation */
+	rotate_3f(_rotation, xraw_f, yraw_f, zraw_f);
+
+	mag_report.x = ((xraw_f * _mag_range_scale) - _mag_scale.x_offset) * _mag_scale.x_scale;
+	mag_report.y = ((yraw_f * _mag_range_scale) - _mag_scale.y_offset) * _mag_scale.y_scale;
+	mag_report.z = ((zraw_f * _mag_range_scale) - _mag_scale.z_offset) * _mag_scale.z_scale;
 	mag_report.scaling = _mag_range_scale;
 	mag_report.range_ga = (float)_mag_range_ga;
+	mag_report.error_count = perf_event_count(_bad_registers) + perf_event_count(_bad_values);
 
-	// apply user specified rotation
-	rotate_3f(_rotation, mag_report.x, mag_report.y, mag_report.z);
+	/* remember the temperature. The datasheet isn't clear, but it
+	 * seems to be a signed offset from 25 degrees C in units of 0.125C
+	 */
+	_last_temperature = 25 + (raw_mag_report.temperature * 0.125f);
+	mag_report.temperature = _last_temperature;
 
 	_mag_reports->force(&mag_report);
 
-	/* XXX please check this poll_notify, is it the right one? */
 	/* notify anyone waiting for data */
 	poll_notify(POLLIN);
 
 	if (!(_pub_blocked)) {
 		/* publish it */
-		orb_publish(_mag->_mag_orb_id, _mag->_mag_topic, &mag_report);
+		orb_publish(ORB_ID(sensor_mag), _mag->_mag_topic, &mag_report);
 	}
 
 	_mag_read++;
@@ -1659,7 +1694,7 @@ LSM303D::print_info()
 	perf_print_counter(_mag_sample_perf);
 	perf_print_counter(_bad_registers);
 	perf_print_counter(_bad_values);
-	perf_print_counter(_accel_reschedules);
+	perf_print_counter(_accel_duplicates);
 	_accel_reports->print_info("accel reports");
 	_mag_reports->print_info("mag reports");
         ::printf("checked_next: %u\n", _checked_next);
@@ -1671,7 +1706,8 @@ LSM303D::print_info()
                          (unsigned)v,
                          (unsigned)_checked_values[i]);
             }
-}
+        }
+	::printf("temperature: %.2f\n", (double)_last_temperature);
 }
 
 void
@@ -1741,8 +1777,8 @@ LSM303D::test_error()
 LSM303D_mag::LSM303D_mag(LSM303D *parent) :
 	CDev("LSM303D_mag", LSM303D_DEVICE_PATH_MAG),
 	_parent(parent),
-	_mag_topic(-1),
-	_mag_orb_id(nullptr),
+	_mag_topic(nullptr),
+	_mag_orb_class_instance(-1),
 	_mag_class_instance(-1)
 {
 }
@@ -1750,7 +1786,7 @@ LSM303D_mag::LSM303D_mag(LSM303D *parent) :
 LSM303D_mag::~LSM303D_mag()
 {
 	if (_mag_class_instance != -1)
-		unregister_class_devname(MAG_DEVICE_PATH, _mag_class_instance);
+		unregister_class_devname(MAG_BASE_DEVICE_PATH, _mag_class_instance);
 }
 
 int
@@ -1762,7 +1798,7 @@ LSM303D_mag::init()
 	if (ret != OK)
 		goto out;
 
-	_mag_class_instance = register_class_devname(MAG_DEVICE_PATH);
+	_mag_class_instance = register_class_devname(MAG_BASE_DEVICE_PATH);
 
 out:
 	return ret;
@@ -1783,7 +1819,13 @@ LSM303D_mag::read(struct file *filp, char *buffer, size_t buflen)
 int
 LSM303D_mag::ioctl(struct file *filp, int cmd, unsigned long arg)
 {
+	switch (cmd) {
+		case DEVIOCGDEVICEID:
+			return (int)CDev::ioctl(filp, cmd, arg);
+			break;
+		default:
 	return _parent->mag_ioctl(filp, cmd, arg);
+}
 }
 
 void

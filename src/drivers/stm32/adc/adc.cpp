@@ -40,7 +40,7 @@
  * and so forth. It avoids the gross complexity of the NuttX ADC driver.
  */
 
-#include <nuttx/config.h>
+#include <px4_config.h>
 #include <board_config.h>
 #include <drivers/device/device.h>
 
@@ -144,11 +144,11 @@ private:
 };
 
 ADC::ADC(uint32_t channels) :
-	CDev("adc", ADC_DEVICE_PATH),
+	CDev("adc", ADC0_DEVICE_PATH),
 	_sample_perf(perf_alloc(PC_ELAPSED, "adc_samples")),
 	_channel_count(0),
 	_samples(nullptr),
-	_to_system_power(0)
+	_to_system_power(nullptr)
 {
 	_debug_enabled = true;
 
@@ -331,7 +331,7 @@ ADC::update_system_power(void)
 	system_power.hipower_5V_OC = !stm32_gpioread(GPIO_VDD_5V_HIPOWER_OC);
 
 	/* lazily publish */
-	if (_to_system_power > 0) {
+	if (_to_system_power != nullptr) {
 		orb_publish(ORB_ID(system_power), _to_system_power, &system_power);
 	} else {
 		_to_system_power = orb_advertise(ORB_ID(system_power), &system_power);
@@ -383,7 +383,7 @@ void
 test(void)
 {
 
-	int fd = open(ADC_DEVICE_PATH, O_RDONLY);
+	int fd = open(ADC0_DEVICE_PATH, O_RDONLY);
 	if (fd < 0)
 		err(1, "can't open ADC device");
 

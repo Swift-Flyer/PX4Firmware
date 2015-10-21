@@ -37,7 +37,7 @@
  * Control channel input/output mixer and failsafe.
  */
 
-#include <nuttx/config.h>
+#include <px4_config.h>
 #include <syslog.h>
 
 #include <sys/types.h>
@@ -115,13 +115,23 @@ mixer_tick(void)
 	 * Decide which set of controls we're using.
 	 */
 
+        bool override_enabled = ((r_status_flags & PX4IO_P_STATUS_FLAGS_OVERRIDE) &&
+                                 (r_status_flags & PX4IO_P_STATUS_FLAGS_RC_OK) &&
+                                 (r_status_flags & PX4IO_P_STATUS_FLAGS_MIXER_OK) &&
+                                 !(r_setup_arming & PX4IO_P_SETUP_ARMING_RC_HANDLING_DISABLED));
+
 	/* do not mix if RAW_PWM mode is on and FMU is good */
 	if ((r_status_flags & PX4IO_P_STATUS_FLAGS_RAW_PWM) &&
 	        (r_status_flags & PX4IO_P_STATUS_FLAGS_FMU_OK)) {
 
-		/* don't actually mix anything - we already have raw PWM values */
-		source = MIX_NONE;
-
+		if (override_enabled) {
+			/* a channel based override has been
+			 * triggered, with FMU active */
+			source = MIX_OVERRIDE_FMU_OK;
+		} else {
+			/* don't actually mix anything - we already have raw PWM values */
+			source = MIX_NONE;
+		}
 	} else {
 
 		if (!(r_status_flags & PX4IO_P_STATUS_FLAGS_OVERRIDE) &&
@@ -132,21 +142,15 @@ mixer_tick(void)
 			source = MIX_FMU;
 		}
 
-		if ( (r_status_flags & PX4IO_P_STATUS_FLAGS_OVERRIDE) &&
-		     (r_status_flags & PX4IO_P_STATUS_FLAGS_RC_OK) &&
-		     (r_status_flags & PX4IO_P_STATUS_FLAGS_MIXER_OK) &&
-		     !(r_setup_arming & PX4IO_P_SETUP_ARMING_RC_HANDLING_DISABLED) &&
+		if ( override_enabled &&
 		     !(r_status_flags & PX4IO_P_STATUS_FLAGS_FMU_OK) &&
 		     /* do not enter manual override if we asked for termination failsafe and FMU is lost */
 		     !(r_setup_arming & PX4IO_P_SETUP_ARMING_TERMINATION_FAILSAFE)) {
 
 		 	/* if allowed, mix from RC inputs directly */
 			source = MIX_OVERRIDE;
-		} else 	if ( (r_status_flags & PX4IO_P_STATUS_FLAGS_OVERRIDE) &&
-		     (r_status_flags & PX4IO_P_STATUS_FLAGS_RC_OK) &&
-		     (r_status_flags & PX4IO_P_STATUS_FLAGS_MIXER_OK) &&
-		     !(r_setup_arming & PX4IO_P_SETUP_ARMING_RC_HANDLING_DISABLED) &&
-		     (r_status_flags & PX4IO_P_STATUS_FLAGS_FMU_OK)) {
+		} else 	if ( override_enabled && 
+                             (r_status_flags & PX4IO_P_STATUS_FLAGS_FMU_OK)) {
 
 			/* if allowed, mix from RC inputs directly up to available rc channels */
 			source = MIX_OVERRIDE_FMU_OK;
@@ -230,11 +234,11 @@ mixer_tick(void)
 
 		/* poor mans mutex */
 		in_mixer = true;
-		mixed = mixer_group.mix(&outputs[0], PX4IO_SERVO_COUNT);
+		mixed = mixer_group.mix(&outputs[0], PX4IO_SERVO_COUNT, &r_mixer_limits);
 		in_mixer = false;
 
 		/* the pwm limit call takes care of out of band errors */
-		pwm_limit_calc(should_arm, mixed, r_page_servo_disarmed, r_page_servo_control_min, r_page_servo_control_max, outputs, r_page_servos, &pwm_limit);
+		pwm_limit_calc(should_arm, mixed, r_setup_pwm_reverse, r_page_servo_disarmed, r_page_servo_control_min, r_page_servo_control_max, outputs, r_page_servos, &pwm_limit);
 
 		for (unsigned i = mixed; i < PX4IO_SERVO_COUNT; i++)
 			r_page_servos[i] = 0;
@@ -272,8 +276,9 @@ mixer_tick(void)
 
 	if (mixer_servos_armed && should_arm) {
 		/* update the servo outputs. */
-		for (unsigned i = 0; i < PX4IO_SERVO_COUNT; i++)
+		for (unsigned i = 0; i < PX4IO_SERVO_COUNT; i++) {
 			up_pwm_servo_set(i, r_page_servos[i]);
+		}
 
 		/* set S.BUS1 or S.BUS2 outputs */
 
@@ -451,7 +456,7 @@ mixer_set_failsafe()
 	unsigned mixed;
 
 	/* mix */
-	mixed = mixer_group.mix(&outputs[0], PX4IO_SERVO_COUNT);
+	mixed = mixer_group.mix(&outputs[0], PX4IO_SERVO_COUNT, &r_mixer_limits);
 
 	/* scale to PWM and update the servo outputs as required */
 	for (unsigned i = 0; i < mixed; i++) {
