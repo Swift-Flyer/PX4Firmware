@@ -301,7 +301,7 @@ int ar_init_motors(int ardrone_uart, int gpios)
 	ardrone_write_motor_commands(ardrone_uart, 0, 0, 0, 0);
 
 	if (errcounter != 0) {
-		fprintf(stderr, "[ardrone_interface] init sequence incomplete, failed %d times", -errcounter);
+		warnx("Failed %d times", -errcounter);
 		fflush(stdout);
 	}
 	return errcounter;
@@ -381,8 +381,6 @@ void ardrone_mixing_and_output(int ardrone_write, const struct actuator_controls
 
 	float output_band = 0.0f;
 	const float startpoint_full_control = 0.25f;	/**< start full control at 25% thrust */
-
-	static bool initialized = false;
 
 	/* linearly scale the control inputs from 0 to startpoint_full_control */
 	if (motor_thrust < startpoint_full_control) {

@@ -206,8 +206,8 @@ LL40LS::LL40LS(int bus, const char *path, int address) :
 	_sensor_ok(false),
 	_measure_ticks(0),
 	_collect_phase(false),
-	_range_finder_topic(-1),
 	_class_instance(-1),
+	_range_finder_topic(-1),
 	_sample_perf(perf_alloc(PC_ELAPSED, "ll40ls_read")),
 	_comms_errors(perf_alloc(PC_COUNT, "ll40ls_comms_errors")),
 	_buffer_overflows(perf_alloc(PC_COUNT, "ll40ls_buffer_overflows")),
@@ -744,6 +744,9 @@ start(int bus)
 		if (g_dev_ext != nullptr && OK != g_dev_ext->init()) {
 			delete g_dev_ext;
 			g_dev_ext = nullptr;
+			if (bus == PX4_I2C_BUS_EXPANSION) {
+				goto fail;
+			}
 		}
 	}
 

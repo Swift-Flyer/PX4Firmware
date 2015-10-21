@@ -92,7 +92,7 @@ static void	mtd_test(void);
 static void	mtd_erase(char *partition_names[], unsigned n_partitions);
 static void	mtd_readtest(char *partition_names[], unsigned n_partitions);
 static void	mtd_rwtest(char *partition_names[], unsigned n_partitions);
-static void	mtd_print_info();
+static void	mtd_print_info(void);
 static int	mtd_get_geometry(unsigned long *blocksize, unsigned long *erasesize, unsigned long *neraseblocks, 
 	unsigned *blkpererase, unsigned *nblocks, unsigned *partsize, unsigned n_partitions);
 
@@ -105,6 +105,16 @@ static unsigned n_partitions_current = 0;
 /* note, these will be equally sized */
 static char *partition_names_default[] = {"/fs/mtd_params", "/fs/mtd_waypoints"};
 static const int n_partitions_default = sizeof(partition_names_default) / sizeof(partition_names_default[0]);
+
+static void
+mtd_status(void)
+{
+	if (!attached)
+		errx(1, "MTD driver not started");
+    
+	mtd_print_info();
+	exit(0);
+}
 
 int mtd_main(int argc, char *argv[])
 {
@@ -162,8 +172,11 @@ static void
 ramtron_attach(void)
 {
 	/* find the right spi */
+#ifdef CONFIG_ARCH_BOARD_AEROCORE
+	struct spi_dev_s *spi = up_spiinitialize(4);
+#else
 	struct spi_dev_s *spi = up_spiinitialize(2);
-	
+#endif
 	/* this resets the spi bus, set correct bus speed again */
 	SPI_SETFREQUENCY(spi, 10 * 1000 * 1000);
 	SPI_SETBITS(spi, 8);
@@ -205,8 +218,12 @@ ramtron_attach(void)
 		errx(1, "failed to initialize mtd driver");
 
 	int ret = mtd_dev->ioctl(mtd_dev, MTDIOC_SETSPEED, (unsigned long)10*1000*1000);
-        if (ret != OK)
-            warnx(1, "failed to set bus speed");
+	if (ret != OK) {
+		// FIXME: From the previous warnx call, it looked like this should have been an errx instead. Tried
+		// that but setting the bug speed does fail all the time. Which was then exiting and the board would
+		// not run correctly. So changed to warnx.
+		warnx("failed to set bus speed");
+	}
 
 	attached = true;
 #endif	
@@ -238,7 +255,7 @@ m25px_attach(void)
 			}
 
 			break;
-		}
+}
 	}
 
 	/* if last attempt is still unsuccessful, abort */
@@ -301,9 +318,9 @@ mtd_start(char *partition_names[], unsigned n_partitions)
 		ramtron_attach();
 		if(!attached)
 			m25px_attach();
-#else
+		#else
 		ramtron_attach();
-#endif
+		#endif
 	}
 
 	if (!mtd_dev) {
@@ -366,7 +383,7 @@ if(is_m25_attached){
 			      (unsigned long)offset, (unsigned long)nblocks);
 			exit(4);
 		}
-		snprintf(blockname, sizeof(blockname), "/dev/mtdblock%d", i);	
+		snprintf(blockname, sizeof(blockname), "/dev/mtdblock%d", i);
 		ret = ftl_initialize(i, part[i]);
 		if (ret < 0) {
 			warnx("ERROR: ftl_initialize %s failed: %d", blockname, ret);
@@ -383,7 +400,7 @@ if(is_m25_attached){
 		}
 	}
 
-	n_partitions_current = n_partitions;		
+	n_partitions_current = n_partitions;
 }		
 
 	started = true;
@@ -434,7 +451,7 @@ static ssize_t mtd_get_partition_size(void)
 	return partsize;
 }
 
-void mtd_print_info()
+void mtd_print_info(void)
 {
 	if (!attached)
 		exit(1);
@@ -462,16 +479,6 @@ mtd_test(void)
 {
 	warnx("This test routine does not test anything yet!");
 	exit(1);
-}
-
-void
-mtd_status(void)
-{
-	if (!attached)
-		errx(1, "MTD driver not started");
-
-	mtd_print_info();
-	exit(0);
 }
 
 void
@@ -508,7 +515,7 @@ mtd_readtest(char *partition_names[], unsigned n_partitions)
 
 	uint8_t v[128];
 	for (uint8_t i = 0; i < n_partitions; i++) {
-		uint32_t count = 0;
+		ssize_t count = 0;
 		printf("reading %s expecting %u bytes\n", partition_names[i], expected_size);
 		int fd = open(partition_names[i], O_RDONLY);
 		if (fd == -1) {
@@ -540,7 +547,7 @@ mtd_rwtest(char *partition_names[], unsigned n_partitions)
 
 	uint8_t v[128], v2[128];
 	for (uint8_t i = 0; i < n_partitions; i++) {
-		uint32_t count = 0;
+		ssize_t count = 0;
                 off_t offset = 0;
 		printf("rwtest %s testing %u bytes\n", partition_names[i], expected_size);
 		int fd = open(partition_names[i], O_RDWR);

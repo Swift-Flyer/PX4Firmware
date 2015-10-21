@@ -58,7 +58,7 @@ public:
 	/**
 	 * Get the address
 	 */
-	int16_t		get_address() { return _address; }
+	int16_t		get_address() const { return _address; }
 	
 protected:
 	/**
@@ -138,6 +138,9 @@ private:
 	uint16_t		_address;
 	uint32_t		_frequency;
 	struct i2c_dev_s	*_dev;
+
+	I2C(const device::I2C&);
+	I2C operator=(const device::I2C&);
 };
 
 } // namespace device
