@@ -964,6 +964,10 @@ HMC5883::collect()
 	if (sensor_is_onboard) {
 		// convert onboard so it matches offboard for the
 		// scaling below
+#if defined(CONFIG_ARCH_BOARD_F4BY)
+		report.y = -report.y;
+		report.z = -report.z;
+#else
 		report.y = -report.y;
 		report.x = -report.x;
         }

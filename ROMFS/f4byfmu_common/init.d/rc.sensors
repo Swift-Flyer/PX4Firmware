@@ -1,0 +1,51 @@
+#!nsh
+#
+# Standard startup script for PX4FMU v1, v2, v3 onboard sensor drivers.
+#
+
+ms5611 start
+adc start
+
+
+	echo "Starting F4BY sensors"
+
+if hmc5883 -X -C start
+then
+	echo "External hmc5883 started OK"
+else
+	echo "External hmc5883 start failed"
+	echo "External hmc5883 start failed" >> $logfile
+fi
+
+if hmc5883 -I -C start
+then
+	echo "Internal hmc5883 started OK"
+else
+	echo "Internal hmc5883 start failed"
+	echo "Internal hmc5883 start failed" >> $logfile
+fi
+if mpu6000 start
+then
+   echo "mpu6000  started OK"
+else
+   echo "mpu6000 start failed"
+   echo "mpu6000 start failed" >> $logfile
+fi
+
+if meas_airspeed start
+then
+else
+	if ets_airspeed start
+	then
+	else
+		if ets_airspeed start -b 1
+		then
+		fi
+	fi
+fi
+
+# Wait 20 ms for sensors (because we need to wait for the HRT and work queue callbacks to fire)
+usleep 20000
+if sensors start
+then
+fi
