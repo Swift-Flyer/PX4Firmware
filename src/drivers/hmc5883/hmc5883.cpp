@@ -970,6 +970,7 @@ HMC5883::collect()
 #else
 		report.y = -report.y;
 		report.x = -report.x;
+#endif
         }
 
         /* the standard external mag by 3DR has x pointing to the
