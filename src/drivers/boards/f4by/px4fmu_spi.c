@@ -149,11 +149,11 @@ __EXPORT void stm32_spi2select(FAR struct spi_dev_s *dev, enum spi_dev_e devid, 
 	{
 	case SPIDEV_FLASH:
 		stm32_gpiowrite(GPIO_SPI_CS_FLASH, !selected);
-		stm32_gpiowrite(GPIO_SPI_CS_SDCARD, 1);
+		stm32_gpiowrite(GPIO_SPI_CS_FLASH, 1);
 		break;
 	case SPIDEV_MMCSD:		
 		stm32_gpiowrite(GPIO_SPI_CS_SDCARD, !selected);
-		stm32_gpiowrite(GPIO_SPI_CS_FLASH, 1);
+		stm32_gpiowrite(GPIO_SPI_CS_SDCARD, 1);
 		break;
 	}
 }
