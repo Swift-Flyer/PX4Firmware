@@ -407,7 +407,6 @@ F4BYFMU::set_mode(Mode mode)
 		up_pwm_servo_init(0xff);
 		set_pwm_rate(_pwm_alt_rate_channels, _pwm_default_rate, _pwm_alt_rate);
 		break;
-#endif
 
 	case MODE_NONE:
 		debug("MODE_NONE");
