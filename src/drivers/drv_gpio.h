@@ -73,14 +73,16 @@
  * For shared pins, alternate function 1 selects the non-GPIO mode
  * (USART2, CAN2, etc.)
  */
-# define GPIO_EXT_1		(1<<0)		/**< high-power GPIO 1 */
-# define GPIO_EXT_2		(1<<1)		/**< high-power GPIO 1 */
-# define GPIO_MULTI_1		(1<<2)		/**< USART2 CTS */
-# define GPIO_MULTI_2		(1<<3)		/**< USART2 RTS */
-# define GPIO_MULTI_3		(1<<4)		/**< USART2 TX */
-# define GPIO_MULTI_4		(1<<5)		/**< USART2 RX */
-# define GPIO_CAN_TX		(1<<6)		/**< CAN2 TX */
-# define GPIO_CAN_RX		(1<<7)		/**< CAN2 RX */
+# define GPIO_SERVO_1		(1<<0)		/**< servo 1 output */
+# define GPIO_SERVO_2		(1<<1)		/**< servo 2 output */
+# define GPIO_SERVO_3		(1<<2)		/**< servo 3 output */
+# define GPIO_SERVO_4		(1<<3)		/**< servo 4 output */
+# define GPIO_SERVO_5		(1<<4)		/**< servo 5 output */
+# define GPIO_SERVO_6		(1<<5)		/**< servo 6 output */
+# define GPIO_SERVO_7		(1<<6)		/**< servo 7 output */
+# define GPIO_SERVO_8		(1<<7)		/**< servo 8 output */
+# define GPIO_CAN_TX		(1<<8)		/**< CAN2 TX */
+# define GPIO_CAN_RX		(1<<9)		/**< CAN2 RX */
 
 /**
  * Device paths for things that support the GPIO ioctl protocol.
@@ -143,7 +145,8 @@
 #if !defined(CONFIG_ARCH_BOARD_PX4IO_V1) && !defined(CONFIG_ARCH_BOARD_PX4IO_V2)  && \
 	!defined(CONFIG_ARCH_BOARD_PX4FMU_V1) && !defined(CONFIG_ARCH_BOARD_PX4FMU_V2) && \
 	!defined(CONFIG_ARCH_BOARD_AEROCORE) && !defined(CONFIG_ARCH_BOARD_PX4_STM32F4DISCOVERY) && \
-	!defined(CONFIG_ARCH_BOARD_POSIXTEST)
+	!defined(CONFIG_ARCH_BOARD_POSIXTEST)&& \
+	!defined(CONFIG_ARCH_BOARD_F4BYFMU)
 # error No CONFIG_ARCH_BOARD_xxxx set
 #endif
 /*
