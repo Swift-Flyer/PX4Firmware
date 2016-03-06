@@ -347,7 +347,7 @@ void F4BY_INPUT::controls_init()
 	uint8_t dsm = 0;
 	uint8_t sbus = 0;
 	uint8_t sppm = 0; 
-	r_raw_rc_values[18] = {0};
+	//r_raw_rc_values[18] = {0};
 	r_raw_rc_count = 0;
 
 
