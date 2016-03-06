@@ -434,7 +434,7 @@ F4BYFMU::set_mode(Mode mode)
 int
 F4BYFMU::set_pwm_rate(uint32_t rate_map, unsigned default_rate, unsigned alt_rate)
 {
-	DEVICE_DEBUG("set_pwm_rate %x %u %u", rate_map, default_rate, alt_rate);
+	debug("set_pwm_rate %x %u %u", rate_map, default_rate, alt_rate);
 
 	for (unsigned pass = 0; pass < 2; pass++) {
 		for (unsigned group = 0; group < _max_actuators; group++) {
