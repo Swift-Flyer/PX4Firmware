@@ -193,6 +193,9 @@ private:
 	uint32_t	gpio_read(void);
 	int		gpio_ioctl(file *filp, int cmd, unsigned long arg);
 
+	/* do not allow to copy due to ptr data members */
+	F4BYFMU(const F4BYFMU&);
+	F4BYFMU operator=(const F4BYFMU&);
 };
 
 const F4BYFMU::GPIOConfig F4BYFMU::_gpio_tab[] = {
