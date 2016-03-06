@@ -88,6 +88,7 @@
  * Device paths for things that support the GPIO ioctl protocol.
  */
 # define F4BY_DEVICE_PATH	"/dev/f4by"
+# define F4BY_INPUT_DEVICE_PATH "/dev/f4by_input"
 #endif
 
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V2
