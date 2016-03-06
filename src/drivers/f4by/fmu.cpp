@@ -1542,25 +1542,7 @@ fmu_new_mode(PortMode new_mode)
 		servo_mode = F4BYFMU::MODE_8PWM;//F4BY
 		break;
 
-	case PORT_FULL_SERIAL:
-	  servo_mode = F4BYFMU::MODE_8PWM;
-		/* set all multi-GPIOs to serial mode */
-		gpio_bits = GPIO_MULTI_1 | GPIO_MULTI_2 | GPIO_MULTI_3 | GPIO_MULTI_4;
-		break;
-
-	case PORT_GPIO_AND_SERIAL:
-	  servo_mode = F4BYFMU::MODE_8PWM;
-		/* set RX/TX multi-GPIOs to serial mode */
-		gpio_bits = GPIO_MULTI_3 | GPIO_MULTI_4;
-		break;
-
-	case PORT_PWM_AND_SERIAL:
-		/* select 2-pin PWM mode */
-		servo_mode = F4BYFMU::MODE_8PWM;
-		/* set RX/TX multi-GPIOs to serial mode */
-		gpio_bits = GPIO_MULTI_3 | GPIO_MULTI_4;
-		break;
-
+	
 	case PORT_PWM_AND_GPIO:
 		/* select 2-pin PWM mode */
 		servo_mode = F4BYFMU::MODE_8PWM;
