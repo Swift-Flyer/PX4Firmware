@@ -71,11 +71,6 @@
 #include <drivers/drv_mixer.h>
 #include <drivers/drv_rc_input.h>
 
-#include <lib/rc/sbus.h>
-#include <lib/rc/dsm.h>
-#include <lib/rc/st24.h>
-#include <lib/rc/sumd.h>
-
 #include <uORB/topics/actuator_controls.h>
 #include <uORB/topics/actuator_controls_0.h>
 #include <uORB/topics/actuator_controls_1.h>
