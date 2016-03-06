@@ -1630,7 +1630,7 @@ peripheral_reset(int ms)
 {
 	int	 fd;
 
-	fd = open(F4BYFMU_DEVICE_PATH, O_RDWR);
+	fd = open(F4BY_DEVICE_PATH, O_RDWR);
 
 	if (fd < 0) {
 		errx(1, "open fail");
