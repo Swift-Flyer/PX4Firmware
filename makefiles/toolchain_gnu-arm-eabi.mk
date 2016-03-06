@@ -164,7 +164,6 @@ ARCHCWARNINGS		 = $(ARCHWARNINGS) \
 			   -Wstrict-prototypes \
 			   -Wold-style-declaration \
 			   -Wmissing-parameter-type \
-			   -Wmissing-prototypes \
 			   -Wnested-externs
 
 # C++-specific warnings

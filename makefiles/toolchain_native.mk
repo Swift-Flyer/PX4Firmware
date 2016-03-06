@@ -189,7 +189,6 @@ endif
 ARCHCWARNINGS		 = $(ARCHWARNINGS) \
 			   -Wbad-function-cast \
 			   -Wstrict-prototypes \
-			   -Wmissing-prototypes \
 			   -Wnested-externs
 
 # Add compiler specific options
