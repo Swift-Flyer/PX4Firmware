@@ -216,7 +216,7 @@ F4BY_INPUT::task_main()
 		usleep(1000);
 	}
 	unlock();
-out:
+
 	debug("exiting");
 	/* tell the dtor that we are exiting */
 	_task = -1;
