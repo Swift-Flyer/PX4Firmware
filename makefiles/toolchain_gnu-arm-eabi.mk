@@ -144,7 +144,6 @@ ARCHWARNINGS		 = -Wall \
 			   -Wpacked \
 			   -Wno-unused-parameter \
 			   -Werror=format-security \
-			   -Werror=array-bounds \
 			   -Wfatal-errors \
 			   -Wformat=1 \
 			   -Werror=unused-but-set-variable \

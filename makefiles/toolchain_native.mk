@@ -160,7 +160,6 @@ ARCHWARNINGS		 = -Wall \
 			   -Wno-unused-parameter \
 			   -Wno-packed \
 			   -Werror=format-security \
-			   -Werror=array-bounds \
 			   -Wfatal-errors \
 			   -Werror=unused-variable \
 			   -Werror=reorder \
