@@ -370,7 +370,7 @@ F4BYFMU::set_mode(Mode mode)
 		break;
 
 	case MODE_4PWM: // v1 or v2 multi-port as 4 PWM outs
-		DEVICE_DEBUG("MODE_4PWM");
+		debug("MODE_4PWM");
 
 		/* default output rates */
 		_pwm_default_rate = 50;
