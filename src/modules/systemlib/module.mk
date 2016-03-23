@@ -50,7 +50,11 @@ SRCS		 = \
 		   mcu_version.c \
 		   bson/tinybson.c \
 		   circuit_breaker.cpp \
-		   $(BUILD_DIR)git_version.c
+		   $(BUILD_DIR)git_version.c \
+
+ifeq ($(BOARD),f4by)
+SRCS		+=  ppm_decode.c
+endif
 
 ifneq ($(ARDUPILOT_BUILD),1)
 # ArduPilot uses its own parameter system

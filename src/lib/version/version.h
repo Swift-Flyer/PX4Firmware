@@ -43,6 +43,10 @@
 #ifndef VERSION_H_
 #define VERSION_H_
 
+#ifdef CONFIG_ARCH_BOARD_F4BY
+#define	HW_ARCH "F4BY"
+#endif
+
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
 #define	HW_ARCH "PX4FMU_V1"
 #endif

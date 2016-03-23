@@ -259,7 +259,7 @@ void
 dsm_bind(uint16_t cmd, int pulses)
 {
 #if !defined(CONFIG_ARCH_BOARD_PX4IO_V1) && !defined(CONFIG_ARCH_BOARD_PX4IO_V2)
-	#warning DSM BIND NOT IMPLEMENTED ON UNKNOWN PLATFORM
+//	#warning DSM BIND NOT IMPLEMENTED ON UNKNOWN PLATFORM
 #else
 	const uint32_t usart1RxAsOutp =
 		GPIO_OUTPUT | GPIO_CNF_OUTPP | GPIO_MODE_50MHz | GPIO_OUTPUT_SET | GPIO_PORTA | GPIO_PIN10;
@@ -500,4 +500,5 @@ dsm_input(uint16_t *values, uint16_t *num_values, uint16_t *rssi)
 			return decode;
 	    }
 	} else	return decode;
+	return false;
 }

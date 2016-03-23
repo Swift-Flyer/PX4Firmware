@@ -547,6 +547,10 @@ F4BYFMU::update_pwm_rev_mask()
 	}
 }
 
+void F4BYFMU::peripheral_reset(int ms)
+{
+}
+
 void
 F4BYFMU::task_main()
 {
