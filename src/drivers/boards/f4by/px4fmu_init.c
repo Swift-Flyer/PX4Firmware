@@ -204,8 +204,8 @@ __EXPORT int nsh_archinitialize(void)
 	drv_led_start();
 	led_off(LED_AMBER);
 	led_off(LED_BLUE);
-//led_off(LED_GREEN);
-	//led_off(LED_YELLOW);
+	led_off(LED_GREEN);
+	led_off(LED_YELLOW);
 
 
 	/* Configure SPI-based devices */
@@ -241,7 +241,7 @@ __EXPORT int nsh_archinitialize(void)
                 SPI_SETBITS(spi2, 8);
                 SPI_SETMODE(spi2, SPIDEV_MODE3);
                 SPI_SELECT(spi2, SPIDEV_FLASH, false);
-		SPI_SELECT(spi2, SPIDEV_MMCSD, false);
+				SPI_SELECT(spi2, SPIDEV_MMCSD, false);
 
                 message("[boot] Initialized SPI port2\n");
         #else
