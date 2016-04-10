@@ -374,7 +374,12 @@ ToneAlarm::init()
 	stm32_configgpio(GPIO_TONE_ALARM_IDLE);
 
 	/* clock/power on our timer */
+#if defined(CONFIG_ARCH_BOARD_F4BY)
+	modifyreg32(STM32_RCC_APB2ENR, 0, TONE_ALARM_CLOCK_ENABLE);
+#else
 	modifyreg32(STM32_RCC_APB1ENR, 0, TONE_ALARM_CLOCK_ENABLE);
+#endif	
+	
 
 	/* initialise the timer */
 	rCR1 = 0;

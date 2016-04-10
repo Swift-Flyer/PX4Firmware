@@ -371,7 +371,7 @@ void F4BY_INPUT::controls_init()
 	{
 		log("DSM input");
 		_inputType = eDSM;
-		dsm_init("/dev/ttyS4");
+		dsm_init("/dev/ttyS5");
 		return;
 	}
 	
@@ -399,11 +399,11 @@ void F4BY_INPUT::controls_init()
 	{
 		log("S.BUS input");
 		_inputType = eSBUS;
-		sbus_init("/dev/ttyS4");
+		sbus_init("/dev/ttyS5");
 		return;
 	}
 	
-	unregister_driver("/dev/ttyS4");
+	unregister_driver("/dev/ttyS5");
 	stm32_configgpio(IN4_INPUT);
 	
 	for(i = 0;i<32;i++)
