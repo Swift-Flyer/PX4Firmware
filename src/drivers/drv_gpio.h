@@ -68,11 +68,14 @@
 
 #ifdef CONFIG_ARCH_BOARD_F4BY
 /*
- * PX4FMU GPIO numbers.
+ * F4BY GPIO numbers.
  *
  * For shared pins, alternate function 1 selects the non-GPIO mode
  * (USART2, CAN2, etc.)
  */
+# define GPIO_EXT_1		(1<<0)		/**< high-power GPIO 1 */
+# define GPIO_EXT_2		(1<<1)		/**< high-power GPIO 1 */
+# define GPIO_EXT_3		(1<<2)		/**< high-power GPIO 1 */
 # define GPIO_SERVO_1		(1<<0)		/**< servo 1 output */
 # define GPIO_SERVO_2		(1<<1)		/**< servo 2 output */
 # define GPIO_SERVO_3		(1<<2)		/**< servo 3 output */
