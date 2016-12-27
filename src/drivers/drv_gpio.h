@@ -146,6 +146,8 @@
 # define GPIO_EXT_1		(1<<0)		/**< high-power GPIO 1 */
 # define GPIO_EXT_2		(1<<1)		/**< high-power GPIO 1 */
 # define GPIO_EXT_3		(1<<2)		/**< high-power GPIO 1 */
+# define GPIO_EXT_4		(1<<3)
+# define GPIO_EXT_5		(1<<4)
 
 
 # define GPIO_SERVO_1			(1<<0)		/**< servo 1 output */
